@@ -27,6 +27,9 @@ Utility functions for the aDDM Toolbox.
 Based on Python addm_toolbox from Gabriela Tavares, gtavares@caltech.edu.
 """
 
+using Pkg
+Pkg.activate("addm")
+
 include("addm.jl")
 
 

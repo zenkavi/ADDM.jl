@@ -25,6 +25,9 @@ Author: Lynn Yang, lynnyang@caltech.edu
 Testing functions in aDDM Toolbox.
 """
 
+using Pkg
+Pkg.activate("addm")
+
 using LinearAlgebra
 using ProgressMeter
 using BenchmarkTools
@@ -68,57 +71,3 @@ function aDDM_grid_search(addm::aDDM, fixationData::FixationData, dList::LinRang
 
     return dMLEList, σMLEList, θMLEList #NNL:, NNL_List
 end
-
-"""
-dLow = parse(Float64, ARGS[1])
-dHigh = parse(Float64, ARGS[2])
-σLow = parse(Float64, ARGS[3])
-σHigh = parse(Float64, ARGS[4])
-θLow = parse(Float64, ARGS[5])
-θHigh = parse(Float64, ARGS[6])
-gridSize = parse(Int64, ARGS[7])
-n = parse(Int64, ARGS[8])
-
-# Set default values for trials and cutOff
-trials = length(ARGS) >= 9 ? parse(Int64, ARGS[9]) : 1000
-cutOff = length(ARGS) >= 10 ? parse(Int64, ARGS[10]) : 30000
-"""
-
-println("Enter dLow:")
-dLow = parse(Float64, readline())
-println("Enter dHigh:")
-dHigh = parse(Float64, readline())
-println("Enter σLow:")
-σLow = parse(Float64, readline())
-println("Enter σHigh:")
-σHigh = parse(Float64, readline())
-println("Enter uLow:")
-θLow = parse(Float64, readline())
-println("Enter θHigh:")
-θHigh = parse(Float64, readline())
-println("Enter grid size:")
-gridSize = parse(Int64, readline())
-println("Enter number of datasets:")
-n = parse(Int64, readline())
-
-dTrue = 0.005
-σTrue = 0.07
-θTrue = 0.3
-
-addm = aDDM(dTrue, σTrue, θTrue)
-data = load_data_from_csv("expdata.csv", "fixations.csv", convertItemValues=convert_item_values)
-fixationData = get_empirical_distributions(data, fixDistType="simple")
-
-dList = LinRange(dLow, dHigh, gridSize)
-σList = LinRange(σLow, σHigh, gridSize)
-θList = LinRange(θLow, θHigh, gridSize)
-
-@time begin
-    dMLEList, σMLEList, θMLEList = aDDM_grid_search(addm, fixationData, dList, σList, θList, n)
-    #NNL: dMLEList, σMLEList, θMLEList, NNL_List = aDDM_grid_search(addm, fixationData, dList, σList, θList, n)
-end
-
-println("d: ", dMLEList)
-println("σ: ", σMLEList)
-println("θ: ", θMLEList)
-#NNL: println("NNL: ", NNL_List)

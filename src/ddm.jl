@@ -1,4 +1,3 @@
-
 """
 #!/usr/bin/env julia
 Copyright (C) 2023, California Institute of Technology
@@ -28,6 +27,9 @@ Ratcliff et al. (1998).
 
 Based on Python addm_toolbox from Gabriela Tavares, gtavares@caltech.edu.
 """
+
+using Pkg
+Pkg.activate("addm")
 
 using Random
 using Distributions

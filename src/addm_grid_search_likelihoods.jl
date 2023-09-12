@@ -25,6 +25,9 @@ Author: Lynn Yang, lynnyang@caltech.edu
 Testing functions in aDDM Toolbox.
 """
 
+using Pkg
+Pkg.activate("addm")
+
 using LinearAlgebra
 using ProgressMeter
 using BenchmarkTools

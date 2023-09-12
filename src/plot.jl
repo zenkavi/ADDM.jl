@@ -24,6 +24,8 @@ Author: Lynn Yang, lynnyang@caltech.edu
 
 Visualization functions for the aDDM Toolbox.
 """
+using Pkg
+Pkg.activate("addm")
 
 using Plots
 using Printf

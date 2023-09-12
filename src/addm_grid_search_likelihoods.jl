@@ -19,7 +19,7 @@ along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
 
 ---
 
-Module: test.jl
+Module: addm_grid_search_likelihoods.jl
 Author: Lynn Yang, lynnyang@caltech.edu
 
 Testing functions in aDDM Toolbox.

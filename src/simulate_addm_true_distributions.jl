@@ -18,7 +18,7 @@ along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
 
 ---
 
-Module: simulate_addm_true_distributions.py
+Module: simulate_addm_true_distributions.jl
 Author: Lynn Yang, lynnyang@caltech.edu
 
 Generates aDDM simulations with an approximation of the "true" fixation

@@ -109,8 +109,8 @@ end
 
 Base.@kwdef mutable struct aDDM
     """
-    Implementation of the traditional drift-diffusion model (DDM), as described
-    by Ratcliff et al. (1998).
+    Implementation of simple attentional drift-diffusion model (aDDM), as described
+    by Kraijbich et al. (2010).
 
     Args:
       d: Number, parameter of the model which controls the speed of
@@ -118,30 +118,31 @@ Base.@kwdef mutable struct aDDM
       σ: Number, parameter of the model, standard deviation for the
           normal distribution.
       θ: Float64 between 0 and 1, parameter of the model which controls
-          the attentional bias.
-      barrier: positive Number, magnitude of the signal thresholds.
+          the attentional discounting.
+      barrier: positive Int64, boundary separation in each direction from 0. Default at 1.
+      decay: constant for linear barrier decay at each time step. Default at 0.
       nonDecisionTime: non-negative Number, the amount of time in
-          milliseconds during which only noise is added to the nonDecisionTime
-          variable.
-      bias: Number, corresponds to the initial value of the nonDecisionTime
+          milliseconds during which processes other than evidence accummulation occurs. Default at 0.
+      bias: Number, corresponds to the initial value of the relative decision value
           variable. Must be smaller than barrier.
-      params: Tuple, parameters of the model.
+      params: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
     """
     d::Number
     σ::Number
     θ::Float64
     barrier::Number
+    decay::Number
     nonDecisionTime::Number
     bias::Number
-    params::Tuple{Number, Number, Number}
+    params::Tuple{Number, Number, Number, Number, Number, Number, Number}
 
-    function aDDM(d, σ, θ; barrier=1, nonDecisionTime=0, bias=0.0)
+    function aDDM(d, σ, θ; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
         if θ < 0 || θ > 1
             throw(DomainError("Error: θ parameter must be between 0 and 1."))
         end
-        DDM(d, σ, barrier=barrier, nonDecisionTime=nonDecisionTime, bias=bias)
-        params = (d, σ, θ)
-        new(d, σ, θ, barrier, nonDecisionTime, bias, params)
+        DDM(d, σ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
+        params = (d, σ, θ, barrier, decay, nonDecisionTime, bias)
+        new(d, σ, θ, barrier, decay, nonDecisionTime, bias, params)
     end
 end
 

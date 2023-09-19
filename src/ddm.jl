@@ -84,7 +84,7 @@ Base.@kwdef mutable struct DDM
     decay::Number #Todo: add different functions for barrierDecay instead of single constant for linear decay
     nonDecisionTime::Number
     bias::Number
-    params::Tuple{Number, Number} = (d, σ, barrier, decay, nonDecisionTime, bias)
+    params::Tuple{Number, Number, Number, Number, Number, Number}
 
     function DDM(d, σ; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
         if barrier <= 0
@@ -92,6 +92,7 @@ Base.@kwdef mutable struct DDM
         elseif bias >= barrier
             throw(ValueError("Error: bias parameter must be smaller than barrier parameter."))
         end
+        params = = (d, σ, barrier, decay, nonDecisionTime, bias)
         new(d, σ, barrier, decay, nonDecisionTime, bias, params)
     end
 end

@@ -175,6 +175,7 @@ function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Numbe
                 push!(correctedFixTime, min(remainingNDT, fTime))
                 push!(correctedFixItem, fTime)
                 push!(correctedFixTime, max(fTime - remainingNDT, 0))
+                remainingNDT = remainingNDT - fTime
             else
                 push!(correctedFixTime, fItem)
                 push!(correctedFixTime, fTime)

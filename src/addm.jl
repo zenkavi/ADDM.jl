@@ -554,7 +554,8 @@ function aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData
 end
 
 
-function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number)
+function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
+                                      barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
     """
     Calculates the negative log likelihood from a given dataset of DDMTrials and parameters
     of a model.
@@ -568,7 +569,7 @@ function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, 
       The negative log likelihood for the given vector of aDDMTrials and model.
     """
     # Calculate the negative log likelihood
-    addm = aDDM(d, σ, θ)
+    addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
     likelihoods = [aDDM_get_trial_likelihood(addm, addmTrial) for addmTrial in addmTrials]
     likelihoods = max.(likelihoods, 1e-64)
     negative_log_likelihood = -sum(log.(likelihoods))
@@ -577,10 +578,11 @@ function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, 
 end
 
 
-function aDDM_negative_log_likelihood_threads(addm::aDDM, addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number)
+function aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
+                                              barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
     """
     Calculates the negative log likelihood from a given dataset of DDMTrials and parameters
-    of a model.
+    of a model using multi threading.
     Args:
       addmTrials: Vector of aDDMTrials.
       d: Number, parameter of the model which controls the speed of integration of
@@ -591,7 +593,7 @@ function aDDM_negative_log_likelihood_threads(addm::aDDM, addmTrials::Vector{aDD
       The negative log likelihood for the given vector of aDDMTrials and model.
     """
     # Calculate the negative log likelihood
-    addm = aDDM(d, σ, θ)
+    addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
     likelihoods = Vector{Float64}(undef, length(addmTrials))
     
     @threads for i in 1:length(addmTrials)
@@ -605,8 +607,10 @@ function aDDM_negative_log_likelihood_threads(addm::aDDM, addmTrials::Vector{aDD
 end
 
 
-function aDDM_total_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number)
-    addm = aDDM(d, σ, θ)
+function aDDM_total_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
+                              barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
+                              
+    addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
     likelihoods = Vector{Float64}(undef, length(addmTrials))
     
     @threads for i in 1:length(addmTrials)

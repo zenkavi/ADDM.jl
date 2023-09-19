@@ -62,7 +62,7 @@ end
 
 Base.@kwdef mutable struct DDM
     """
-    Implementation of the traditional drift-diffusion model (DDM), as described
+    Implementation of a simplified version of the traditional drift-diffusion model (DDM), as described
     by Ratcliff et al. (1998).
 
     Args:
@@ -70,28 +70,29 @@ Base.@kwdef mutable struct DDM
           integration of the signal.
       σ: Number, parameter of the model, standard deviation for the
           normal distribution.
-      barrier: positive Int64, magnitude of the signal thresholds.
+      barrier: positive Int64, boundary separation in each direction from 0. Default at 1.
+      decay: constant for linear barrier decay at each time step. Default at 0.
       nonDecisionTime: non-negative Number, the amount of time in
-          milliseconds during which only noise is added to the nonDecisionTime
-          variable.
-      bias: Number, corresponds to the initial value of the nonDecisionTime
+          milliseconds during which processes other than evidence accummulation occurs. Default at 0.
+      bias: Number, corresponds to the initial value of the relative decision value
           variable. Must be smaller than barrier.
-      params: Tuple, parameters of the model.
+      params: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
     """
     d::Number
     σ::Number
     barrier::Number
+    decay::Number #Todo: add different functions for barrierDecay instead of single constant for linear decay
     nonDecisionTime::Number
     bias::Number
-    params::Tuple{Number, Number} = (d, σ)
+    params::Tuple{Number, Number} = (d, σ, barrier, decay, nonDecisionTime, bias)
 
-    function DDM(d, σ; barrier=1, nonDecisionTime=0, bias=0.0)
+    function DDM(d, σ; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
         if barrier <= 0
             throw(ValueError("Error: barrier parameter must larger than zero."))
         elseif bias >= barrier
             throw(ValueError("Error: bias parameter must be smaller than barrier parameter."))
         end
-        new(d, σ, barrier, nonDecisionTime, bias, (d, σ))
+        new(d, σ, barrier, decay, nonDecisionTime, bias, params)
     end
 end
 

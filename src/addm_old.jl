@@ -1,33 +1,3 @@
-"""
-#!/usr/bin/env julia
-Copyright (C) 2023, California Institute of Technology
-
-This file is part of addm_toolbox.
-
-addm_toolbox is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-addm_toolbox is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
-
----
-
-Module: addm.jl
-Author: Lynn Yang, lynnyang@caltech.edu
-
-Implementation of the classic drift-diffusion model (DDM), as described by
-Ratcliff et al. (1998).
-
-Based on Python addm_toolbox from Gabriela Tavares, gtavares@caltech.edu.
-"""
-
 using Pkg
 Pkg.activate("addm")
 
@@ -37,28 +7,30 @@ using Base.Threads
 
 include("ddm.jl")
 
-
+"""
+    FixationData(probFixLeftFirst, latencies, transitions, fixations; fixDistType="fixation")
+    
+# Arguments:
+- `probFixLeftFirst`: Float64 between 0 and 1, empirical probability that
+    the left item will be fixated first.
+- `latencies`: Vector corresponding to the empirical distribution of
+    trial latencies (delay before first fixation) in milliseconds.
+- `transitions`: Vector corresponding to the empirical distribution
+    of transitions (delays between item fixations) in milliseconds.
+- `fixations`: Dict whose indexing is defined according to parameter
+    fixDistType. Each entry is an array corresponding to the
+    empirical distribution of item fixation durations in
+    milliseconds.
+- `fixDistType`: String, one of {'simple', 'difficulty', 'fixation'},
+    determines how the fixation distributions are indexed. If
+    'simple', fixation distributions are indexed only by type (1st,
+    2nd, etc). If 'difficulty', they are indexed by type and by trial
+    difficulty, i.e., the absolute value for the trial's value
+    difference. If 'fixation', they are indexed by type and by the
+    value difference between the fixated and unfixated items.
+"""
 struct FixationData
-    """
-    Args:
-      probFixLeftFirst: Float64 between 0 and 1, empirical probability that
-          the left item will be fixated first.
-      latencies: Vector corresponding to the empirical distribution of
-          trial latencies (delay before first fixation) in milliseconds.
-      transitions: Vector corresponding to the empirical distribution
-          of transitions (delays between item fixations) in milliseconds.
-      fixations: Dict whose indexing is defined according to parameter
-          fixDistType. Each entry is an array corresponding to the
-          empirical distribution of item fixation durations in
-          milliseconds.
-      fixDistType: String, one of {'simple', 'difficulty', 'fixation'},
-          determines how the fixation distributions are indexed. If
-          'simple', fixation distributions are indexed only by type (1st,
-          2nd, etc). If 'difficulty', they are indexed by type and by trial
-          difficulty, i.e., the absolute value for the trial's value
-          difference. If 'fixation', they are indexed by type and by the
-          value difference between the fixated and unfixated items.
-    """
+    
     probFixLeftFirst::Float64
     latencies::Vector{Number}
     transitions::Vector{Number}
@@ -74,25 +46,27 @@ struct FixationData
     end
 end
 
+"""
+    aDDMTrial(RDV, RT, choice, valueLeft, valueRight; fixItem=Number[], fixTime=Number[], fixRDV=Number[], uninterruptedLastFixTime=0.0)
 
+# Arguments:
+- `RT`: response time in milliseconds.
+- `choice`: either -1 (for left item) or +1 (for right item).
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+- `fixItem`: list of items fixated during the trial in chronological
+    order; 1 correponds to left, 2 corresponds to right, and any
+    other value is considered a transition/blank fixation.
+- `fixTime`: list of fixation durations (in milliseconds) in
+    chronological order.
+- `fixRDV`: list of Float64 corresponding to the RDV values at the end of
+    each fixation in the trial.
+- `uninterruptedLastFixTime`: Int64 corresponding to the duration, in
+    milliseconds, that the last fixation in the trial would have if it
+    had not been interrupted when a decision was made.
+"""
 mutable struct aDDMTrial
-    """
-    Args:
-      RT: response time in milliseconds.
-      choice: either -1 (for left item) or +1 (for right item).
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-      fixItem: list of items fixated during the trial in chronological
-          order; 1 correponds to left, 2 corresponds to right, and any
-          other value is considered a transition/blank fixation.
-      fixTime: list of fixation durations (in milliseconds) in
-          chronological order.
-      fixRDV: list of Float64 corresponding to the RDV values at the end of
-          each fixation in the trial.
-      uninterruptedLastFixTime: Int64 corresponding to the duration, in
-          milliseconds, that the last fixation in the trial would have if it
-          had not been interrupted when a decision was made.
-    """
+    
     ddmTrial::DDMTrial
     fixItem::Vector{Number}
     fixTime::Vector{Number}
@@ -106,27 +80,27 @@ mutable struct aDDMTrial
     end
 end
 
+"""
+Implementation of simple attentional drift-diffusion model (aDDM), as described
+by Kraijbich et al. (2010).
 
+# Arguments:
+- `d`: Number, parameter of the model which controls the speed of
+    integration of the signal.
+- `σ`: Number, parameter of the model, standard deviation for the
+    normal distribution.
+- `θ`: Float64 between 0 and 1, parameter of the model which controls
+    the attentional discounting.
+- `barrier`: positive Int64, boundary separation in each direction from 0. Default at 1.
+- `decay`: constant for linear barrier decay at each time step. Default at 0.
+- `nonDecisionTime`: non-negative Number, the amount of time in
+    milliseconds during which processes other than evidence accummulation occurs. Default at 0.
+- `bias`: Number, corresponds to the initial value of the relative decision value
+    variable. Must be smaller than barrier.
+- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
+"""
 Base.@kwdef mutable struct aDDM
-    """
-    Implementation of simple attentional drift-diffusion model (aDDM), as described
-    by Kraijbich et al. (2010).
-
-    Args:
-      d: Number, parameter of the model which controls the speed of
-          integration of the signal.
-      σ: Number, parameter of the model, standard deviation for the
-          normal distribution.
-      θ: Float64 between 0 and 1, parameter of the model which controls
-          the attentional discounting.
-      barrier: positive Int64, boundary separation in each direction from 0. Default at 1.
-      decay: constant for linear barrier decay at each time step. Default at 0.
-      nonDecisionTime: non-negative Number, the amount of time in
-          milliseconds during which processes other than evidence accummulation occurs. Default at 0.
-      bias: Number, corresponds to the initial value of the relative decision value
-          variable. Must be smaller than barrier.
-      params: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
-    """
+    
     d::Number
     σ::Number
     θ::Float64
@@ -147,25 +121,28 @@ Base.@kwdef mutable struct aDDM
     end
 end
 
+"""
+    aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, approxStateStep::Number = 0.1, plotTrial::Bool = false, decay::Number = 0.0)
 
+Compute the likelihood of the data from a single aDDM trial for these
+particular aDDM parameters.
+
+# Arguments:
+- `addm`: aDDM object.
+- `trial`: aDDMTrial object.
+- `timeStep`: Number, value in milliseconds to be used for binning the
+    time axis.
+- `approxStateStep`: Number, to be used for binning the RDV axis.
+- `plotTrial`: Bool, flag that determines whether the algorithm
+    evolution for the trial should be plotted.
+- `decay`: Number, corresponds to how barriers change over time
+Returns:
+- The likelihood obtained for the given trial and model.
+"""
 function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, 
                                    approxStateStep::Number = 0.1, plotTrial::Bool = false, 
                                    decay::Number = 0.0)
-    """
-    Computes the likelihood of the data from a single aDDM trial for these
-    particular aDDM parameters.
-    Args:
-      addm: aDDM object.
-      trial: aDDMTrial object.
-      timeStep: Number, value in milliseconds to be used for binning the
-          time axis.
-      approxStateStep: Number, to be used for binning the RDV axis.
-      plotTrial: Bool, flag that determines whether the algorithm
-          evolution for the trial should be plotted.
-      decay: Number, corresponds to how barriers change over time
-    Returns:
-      The likelihood obtained for the given trial and model.
-    """
+    
     # Iterate over the fixations and discount the non-decision time.
     if addm.nonDecisionTime > 0
         correctedFixItem = Number[]
@@ -328,36 +305,39 @@ function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Numbe
     return likelihood
 end
 
+"""
+    aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number; timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, timeBins=nothing, cutOff::Number=100000)
 
+Generate a DDM trial given the item values.
+
+# Arguments:
+- `addm`: aDDM object.
+- `fixationData`: FixationData object.
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+- `timeStep`: Number, value in milliseconds to be used for binning
+    time axis.
+- `numFixDists`: Int64, number of fixation types to use in the fixation
+    distributions. For instance, if numFixDists equals 3, then 3
+    separate fixation types will be used, corresponding to the 1st,
+    2nd and other (3rd and up) fixations in each trial.
+- `fixationDist`: distribution of fixations which, when provided, will be
+    used instead of fixationData.fixations. This should be a dict of
+    dicts of dicts, corresponding to the probability distributions of
+    fixation durations. Indexed first by fixation type (1st, 2nd, etc),
+    then by the value difference between the fixated and unfixated 
+    items, then by time bin. Each entry is a number between 0 and 1 
+    corresponding to the probability assigned to the particular time
+    bin (i.e. given a particular fixation type and value difference,
+    probabilities for all bins should add up to 1).
+- `timeBins`: array containing the time bins used in fixationDist.
+# Returns:
+- An aDDMTrial object resulting from the simulation.
+"""
 function aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number; 
                         timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, 
                         timeBins=nothing, cutOff::Number=100000)
-    """
-    Generates a DDM trial given the item values.
-    Args:
-      addm: aDDM object.
-      fixationData: FixationData object.
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-      timeStep: Number, value in milliseconds to be used for binning
-          time axis.
-      numFixDists: Int64, number of fixation types to use in the fixation
-          distributions. For instance, if numFixDists equals 3, then 3
-          separate fixation types will be used, corresponding to the 1st,
-          2nd and other (3rd and up) fixations in each trial.
-      fixationDist: distribution of fixations which, when provided, will be
-          used instead of fixationData.fixations. This should be a dict of
-          dicts of dicts, corresponding to the probability distributions of
-          fixation durations. Indexed first by fixation type (1st, 2nd, etc),
-          then by the value difference between the fixated and unfixated 
-          items, then by time bin. Each entry is a number between 0 and 1 
-          corresponding to the probability assigned to the particular time
-          bin (i.e. given a particular fixation type and value difference,
-          probabilities for all bins should add up to 1).
-      timeBins: array containing the time bins used in fixationDist.
-    Returns:
-      An aDDMTrial object resulting from the simulation.
-    """
+    
     fixUnfixValueDiffs = Dict(1 => valueLeft - valueRight, 2 => valueRight - valueLeft)
     
     fixItem = Number[]
@@ -519,33 +499,40 @@ function aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, valueLeft::
 end
 
 
+"""
+    aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
+
+# Arguments
+- `addm`: aDDM object.
+- `fixationData`: FixationData object.
+- `n`: Number of trials to be simulated.
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+
+# Returns
+- `addmTrials`: Vector of aDDMTrial.s 
+"""
 function aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
-    """
-    Args:
-      addm: aDDM object.
-      fixationData: FixationData object.
-      n: Number of trials to be simulated.
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-    Returns:
-      addmTrials: Vector of aDDMTrial.s 
-    """
+    
     addmTrials = [aDDM_simulate_trial(addm, fixationData, rand(0:5), rand(0:5), cutOff=cutOff) for _ in 1:n]
     return addmTrials
 end
 
+"""
+    aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
 
+# Arguments
+- `addm`: aDDM object.
+- `fixationData`: FixationData object.
+- `n`: Number of trials to be simulated.
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+
+# Returns
+- `addmTrials`: Vector of aDDMTrial.s 
+"""
 function aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
-    """
-    Args:
-      addm: aDDM object.
-      fixationData: FixationData object.
-      n: Number of trials to be simulated.
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-    Returns:
-      addmTrials: Vector of aDDMTrial.s 
-    """
+    
     addmTrials = Vector{aDDMTrial}(undef, n)
     @threads for i in 1:n
         addmTrials[i] = aDDM_simulate_trial(addm, fixationData, rand(0:5), rand(0:5), cutOff=cutOff)
@@ -554,21 +541,23 @@ function aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData
     return addmTrials
 end
 
+"""
+    aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
 
+Calculate the negative log likelihood from a given dataset of DDMTrials and parameters
+of a model.
+
+# Arguments
+- `addmTrials`: Vector of aDDMTrials.
+- `d`: Number, parameter of the model which controls the speed of integration of the signal. 
+- `σ`: Number, parameter of the model, standard deviation for the normal distribution.
+
+# Returns: 
+- The negative log likelihood for the given vector of aDDMTrials and model.
+"""
 function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
                                       barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
-    """
-    Calculates the negative log likelihood from a given dataset of DDMTrials and parameters
-    of a model.
-    Args:
-      addmTrials: Vector of aDDMTrials.
-      d: Number, parameter of the model which controls the speed of integration of
-          the signal. 
-      σ: Number, parameter of the model, standard deviation for the normal
-          distribution.
-    Returns: 
-      The negative log likelihood for the given vector of aDDMTrials and model.
-    """
+    
     # Calculate the negative log likelihood
     addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
     likelihoods = [aDDM_get_trial_likelihood(addm, addmTrial) for addmTrial in addmTrials]
@@ -578,21 +567,23 @@ function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, 
     return negative_log_likelihood
 end
 
+"""
+    aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
 
+Calculate the negative log likelihood from a given dataset of DDMTrials and parameters
+of a model using multi threading.
+
+# Arguments
+- `addmTrials`: Vector of aDDMTrials.
+- `d`: Number, parameter of the model which controls the speed of integration of the signal. 
+- `σ`: Number, parameter of the model, standard deviation for the normal distribution.
+
+# Returns 
+- The negative log likelihood for the given vector of aDDMTrials and model.
+"""
 function aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
                                               barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
-    """
-    Calculates the negative log likelihood from a given dataset of DDMTrials and parameters
-    of a model using multi threading.
-    Args:
-      addmTrials: Vector of aDDMTrials.
-      d: Number, parameter of the model which controls the speed of integration of
-          the signal. 
-      σ: Number, parameter of the model, standard deviation for the normal
-          distribution.
-    Returns: 
-      The negative log likelihood for the given vector of aDDMTrials and model.
-    """
+    
     # Calculate the negative log likelihood
     addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
     likelihoods = Vector{Float64}(undef, length(addmTrials))

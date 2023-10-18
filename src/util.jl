@@ -1,54 +1,22 @@
-"""
-#!/usr/bin/env julia
-Copyright (C) 2023, California Institute of Technology
-
-This file is part of addm_toolbox.
-
-addm_toolbox is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-addm_toolbox is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
-
----
-
-Module: util.jl
-Author: Lynn Yang, lynnyang@caltech.edu
-
-Utility functions for the aDDM Toolbox.
-
-Based on Python addm_toolbox from Gabriela Tavares, gtavares@caltech.edu.
-"""
-
-using Pkg
-Pkg.activate("addm")
-
-include("addm.jl")
-
-
 function convert_item_values(value)
     return abs((abs(value) - 15) / 5)
 end
 
+"""
+    load_trial_conditions_from_csv(trialsFileName::String)
 
+Load trial conditions from a CSV file. Format expected for trial
+conditions file: value_left, value_right.
+
+# Arguments
+- `trialsFileName`: String, name of trial conditions file. 
+
+# Return
+- A list containing the trial conditions, where each trial condition is a
+    tuple with format (value_left, value_right).
+"""
 function load_trial_conditions_from_csv(trialsFileName::String)
-    """
-    Loads trial conditions from a CSV file. Format expected for trial
-    conditions file: value_left, value_right.
-    Args:
-      trialsFileName: String, name of trial conditions file. 
-
-    Returns:
-      A list containing the trial conditions, where each trial condition is a
-          tuple with format (value_left, value_right).
-    """
+    
     trialConditions = []
     try
         df = DataFrame(CSV.File(trialsFileName, delim=","))
@@ -69,23 +37,27 @@ function load_trial_conditions_from_csv(trialsFileName::String)
     return trialConditions
 end
 
+"""
+    load_data_from_csv(expdataFileName, fixationsFileName; convertItemValues=nothing)
 
+Load experimental data from two CSV files: an experimental data file and a
+fixations file. If angular distances are used, they are expected to be from
+the set [-15, -10, -5, 0, 5, 10, 15] and will be converted into values in
+[0, 1, 2, 3]. Format expected for experimental data file: parcode, trial,
+rt, choice, item_left, item_right. Format expected for fixations file:
+parcode, trial, fix_item, fix_time.
+
+# Arguments
+- `expdataFileName`: String, name of experimental data file.
+- `fixationsFileName`: String, name of fixations file.
+- `convertItemValues`: handle to a function that converts item values.
+
+# Return
+  A dict, indexed by subjectId, where each entry is a list of aDDMTrial
+      objects.
+"""
 function load_data_from_csv(expdataFileName, fixationsFileName; convertItemValues=nothing)
-    """
-    Loads experimental data from two CSV files: an experimental data file and a
-    fixations file. If angular distances are used, they are expected to be from
-    the set [-15, -10, -5, 0, 5, 10, 15] and will be converted into values in
-    [0, 1, 2, 3]. Format expected for experimental data file: parcode, trial,
-    rt, choice, item_left, item_right. Format expected for fixations file:
-    parcode, trial, fix_item, fix_time.
-    Args:
-      expdataFileName: String, name of experimental data file.
-      fixationsFileName: String, name of fixations file.
-      convertItemValues: handle to a function that converts item values.
-    Returns:
-      A dict, indexed by subjectId, where each entry is a list of aDDMTrial
-          objects.
-    """
+    
     # Load experimental data from CSV file.
     try 
         df = DataFrame(CSV.File(expdataFileName, delim=","))
@@ -159,7 +131,45 @@ function load_data_from_csv(expdataFileName, fixationsFileName; convertItemValue
     return data
 end
 
+"""
 
+Create empirical distributions from the data to be used when generating
+model simulations.
+
+# Arguments
+- `data`: a dict, indexed by subjectId, where each entry is a list of
+    aDDMTrial objects.
+- `timeStep`: integer, minimum duration of a fixation to be considered, in
+    miliseconds.
+- `maxFixTime`: integer, maximum duration of a fixation to be considered, in
+    miliseconds.
+- `numFixDists`: integer, number of fixation types to use in the fixation
+    distributions. For instance, if numFixDists equals 3, then 3 separate
+    fixation types will be used, corresponding to the 1st, 2nd and other
+    (3rd and up) fixations in each trial.
+- `fixDistType`: string, one of {'simple', 'difficulty', 'fixation'}, used to
+    determine how the fixation distributions should be indexed. If
+    'simple', then fixation distributions will be indexed only by type
+    (1st, 2nd, etc). If 'difficulty', they will be indexed by type and by
+    trial difficulty, i.e., the absolute value for the trial's value
+    difference. If 'fixation', they will be indexed by type and by the
+    value difference between the fixated and unfixated items.
+- `valueDiffs`: list of integers. If fixDistType is 'difficulty' or
+    'fixation', valueDiffs is a range correspoding to the item values to
+    be used when indexing the fixation distributions.
+- `subjectIds`: list of strings corresponding to the subjects whose data
+    should be used. If not provided, all existing subjects will be used.
+- `useOddTrials`: boolean, whether or not to use odd trials when creating the
+    distributions.
+- `useEvenTrials`: boolean, whether or not to use even trials when creating
+    the distributions.
+- `useCisTrials`: boolean, whether or not to use cis trials when creating the
+    distributions (for perceptual decisions only).
+- `useTransTrials`: boolean, whether or not to use trans trials when creating
+    the distributions (for perceptual decisions only).
+# Return
+- A FixationData object.
+"""
 function get_empirical_distributions(data::Dict; timeStep::Number=10, 
                                      maxFixTime::Number=3000, 
                                      numFixDists::Int64=3, fixDistType::String="fixation", 
@@ -169,43 +179,7 @@ function get_empirical_distributions(data::Dict; timeStep::Number=10,
                                      useEvenTrials::Bool=true, 
                                      useCisTrials::Bool=true,
                                      useTransTrials::Bool=true)
-    """
-    Creates empirical distributions from the data to be used when generating
-    model simulations.
-    Args:
-      data: a dict, indexed by subjectId, where each entry is a list of
-          aDDMTrial objects.
-      timeStep: integer, minimum duration of a fixation to be considered, in
-          miliseconds.
-      maxFixTime: integer, maximum duration of a fixation to be considered, in
-          miliseconds.
-      numFixDists: integer, number of fixation types to use in the fixation
-          distributions. For instance, if numFixDists equals 3, then 3 separate
-          fixation types will be used, corresponding to the 1st, 2nd and other
-          (3rd and up) fixations in each trial.
-      fixDistType: string, one of {'simple', 'difficulty', 'fixation'}, used to
-          determine how the fixation distributions should be indexed. If
-          'simple', then fixation distributions will be indexed only by type
-          (1st, 2nd, etc). If 'difficulty', they will be indexed by type and by
-          trial difficulty, i.e., the absolute value for the trial's value
-          difference. If 'fixation', they will be indexed by type and by the
-          value difference between the fixated and unfixated items.
-      valueDiffs: list of integers. If fixDistType is 'difficulty' or
-          'fixation', valueDiffs is a range correspoding to the item values to
-          be used when indexing the fixation distributions.
-      subjectIds: list of strings corresponding to the subjects whose data
-          should be used. If not provided, all existing subjects will be used.
-      useOddTrials: boolean, whether or not to use odd trials when creating the
-          distributions.
-      useEvenTrials: boolean, whether or not to use even trials when creating
-          the distributions.
-      useCisTrials: boolean, whether or not to use cis trials when creating the
-          distributions (for perceptual decisions only).
-      useTransTrials: boolean, whether or not to use trans trials when creating
-          the distributions (for perceptual decisions only).
-    Returns:
-      A FixationData object.
-    """
+    
     fixDistType = String(fixDistType)
     availableTypes = ["simple", "difficulty", "fixation"]
     if (!(fixDistType in availableTypes))

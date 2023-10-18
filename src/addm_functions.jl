@@ -1,14 +1,6 @@
-using Pkg
-Pkg.activate("addm")
-
-using Random
-using Distributions
-using Base.Threads
-
-include("ddm.jl")
-
 """
-    FixationData(probFixLeftFirst, latencies, transitions, fixations; fixDistType="fixation")
+    FixationData(probFixLeftFirst, latencies, transitions, fixations; 
+                 fixDistType="fixation")
     
 # Arguments:
 - `probFixLeftFirst`: Float64 between 0 and 1, empirical probability that
@@ -47,7 +39,8 @@ struct FixationData
 end
 
 """
-    aDDMTrial(RDV, RT, choice, valueLeft, valueRight; fixItem=Number[], fixTime=Number[], fixRDV=Number[], uninterruptedLastFixTime=0.0)
+    aDDMTrial(RDV, RT, choice, valueLeft, valueRight; fixItem=Number[], fixTime=Number[], 
+              fixRDV=Number[], uninterruptedLastFixTime=0.0)
 
 # Arguments:
 - `RT`: response time in milliseconds.
@@ -94,10 +87,12 @@ by Kraijbich et al. (2010).
 - `barrier`: positive Int64, boundary separation in each direction from 0. Default at 1.
 - `decay`: constant for linear barrier decay at each time step. Default at 0.
 - `nonDecisionTime`: non-negative Number, the amount of time in
-    milliseconds during which processes other than evidence accummulation occurs. Default at 0.
+    milliseconds during which processes other than evidence accummulation occurs. 
+    Default at 0.
 - `bias`: Number, corresponds to the initial value of the relative decision value
     variable. Must be smaller than barrier.
-- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
+- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, 
+    nonDecisionTime, bias
 """
 Base.@kwdef mutable struct aDDM
     
@@ -112,7 +107,7 @@ Base.@kwdef mutable struct aDDM
 
     function aDDM(d, σ, θ; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
         if θ < 0 || θ > 1
-            # Revisit this based on Brenden's aDDM in losses findings
+            # Revisit boundaries for theta based on Brenden's aDDM in losses findings
             throw(DomainError("Error: θ parameter must be between 0 and 1."))
         end
         DDM(d, σ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
@@ -122,10 +117,12 @@ Base.@kwdef mutable struct aDDM
 end
 
 """
-    aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, approxStateStep::Number = 0.1, plotTrial::Bool = false, decay::Number = 0.0)
+    aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, 
+                              approxStateStep::Number = 0.1, plotTrial::Bool = false, 
+                              decay::Number = 0.0)
 
-Compute the likelihood of the data from a single aDDM trial for these
-particular aDDM parameters.
+Compute the likelihood of the data from a single aDDM trial for these particular aDDM 
+  parameters.
 
 # Arguments:
 - `addm`: aDDM object.
@@ -306,7 +303,10 @@ function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Numbe
 end
 
 """
-    aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number; timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, timeBins=nothing, cutOff::Number=100000)
+    aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, 
+                        valueLeft::Number, valueRight::Number; timeStep::Number=10.0, 
+                        numFixDists::Int64=3 , fixationDist=nothing, timeBins=nothing, 
+                        cutOff::Number=100000)
 
 Generate a DDM trial given the item values.
 
@@ -500,7 +500,8 @@ end
 
 
 """
-    aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
+    aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int64; 
+                             cutOff::Int64 = 20000)
 
 # Arguments
 - `addm`: aDDM object.
@@ -519,7 +520,8 @@ function aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int
 end
 
 """
-    aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
+    aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData, n::Int64; 
+                                     cutOff::Int64 = 20000)
 
 # Arguments
 - `addm`: aDDM object.
@@ -568,14 +570,18 @@ function aDDM_negative_log_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, 
 end
 
 """
-    aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
+    aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, 
+                                         d::Number, σ::Number, θ::Number; 
+                                         barrier = 1, decay = 0, nonDecisionTime = 0, 
+                                         bias = 0.0)
 
 Calculate the negative log likelihood from a given dataset of DDMTrials and parameters
 of a model using multi threading.
 
 # Arguments
 - `addmTrials`: Vector of aDDMTrials.
-- `d`: Number, parameter of the model which controls the speed of integration of the signal. 
+- `d`: Number, parameter of the model which controls the speed of 
+    integration of the signal. 
 - `σ`: Number, parameter of the model, standard deviation for the normal distribution.
 
 # Returns 

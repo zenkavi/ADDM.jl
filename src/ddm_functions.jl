@@ -1,13 +1,3 @@
-using Pkg
-Pkg.activate("addm")
-
-using Random
-using Distributions
-using CSV
-using DataFrames
-using Statistics
-using LinearAlgebra
-
 """
     DDMTrial(RDV, RT, choice, valueLeft, valueRight)
 
@@ -32,8 +22,8 @@ struct DDMTrial
 end
 
 """
-Implementation of a simplified version of the traditional drift-diffusion model (DDM), as described
-by Ratcliff et al. (1998).
+Implementation of a simplified version of the traditional drift-diffusion model (DDM), 
+as described by Ratcliff et al. (1998).
 
 # Arguments
 - `d`: Number, parameter of the model which controls the speed of
@@ -43,10 +33,12 @@ by Ratcliff et al. (1998).
 - `barrier`: positive Int64, boundary separation in each direction from 0. Default at 1.
 - `decay`: constant for linear barrier decay at each time step. Default at 0.
 - `nonDecisionTime`: non-negative Number, the amount of time in
-    milliseconds during which processes other than evidence accummulation occurs. Default at 0.
+    milliseconds during which processes other than evidence accummulation occurs. 
+    Default at 0.
 - `bias`: Number, corresponds to the initial value of the relative decision value
     variable. Must be smaller than barrier.
-- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, nonDecisionTime, bias
+- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, 
+    nonDecisionTime, bias
 """
 Base.@kwdef mutable struct DDM
     
@@ -70,7 +62,9 @@ Base.@kwdef mutable struct DDM
 end
 
 """
-    DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, approxStateStep::Number = 0.1, plotTrial::Bool = false, decay::Number = 0)
+    DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, 
+                             approxStateStep::Number = 0.1, plotTrial::Bool = false, 
+                             decay::Number = 0)
 
 Compute the likelihood of the data from a single DDM trial for these
 particular DDM parameters.
@@ -199,7 +193,8 @@ function DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 
 end
 
 """
-    DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, cutOff::Int64 = 20000)
+    DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
+                       cutOff::Int64 = 20000)
 
 Generate a DDM trial given the item values.
 
@@ -303,7 +298,8 @@ function DDM_negative_log_likelihood(ddmTrials::Vector{DDMTrial}, d::Number, σ:
 end
 
 """
-    DDM_simulate_trial_data_csv(ddm::DDM, n::Int64; path::String="", fileName::String="ddm_data.csv", cutOff::Int64=20000)
+    DDM_simulate_trial_data_csv(ddm::DDM, n::Int64; path::String="", 
+                                fileName::String="ddm_data.csv", cutOff::Int64=20000)
 
 Save a CSV file of simulated DDMTrials.
 

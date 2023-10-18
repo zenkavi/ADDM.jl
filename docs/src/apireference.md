@@ -1,0 +1,2 @@
+List functions in the package for which the documentation, listed in the scripts they are defined in, should be pulled.
+See example [here](https://github.com/odow/SDDP.jl/blob/cb89e07e93f314b0ea2ce1aaa770123e1b102a2f/docs/src/apireference.md)

@@ -1,13 +1,3 @@
-using Pkg
-Pkg.activate("addm")
-
-using LinearAlgebra
-using ProgressMeter
-using BenchmarkTools
-
-include("addm.jl")
-include("util.jl")
-
 """
     aDDM_grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
                           θList::LinRange{Float64, Int64}, n::Int64; trials::Int64=1000, cutOff::Int64=30000, simData::Bool = false)

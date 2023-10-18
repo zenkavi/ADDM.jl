@@ -1,0 +1,2 @@
+# See example file here https://github.com/odow/SDDP.jl/blob/cb89e07e93f314b0ea2ce1aaa770123e1b102a2f/docs/make.jl
+# Script to render documentation from markdowns and jl scripts upon push (deployed by github actions)

@@ -19,8 +19,10 @@ using LinearAlgebra
 using ProgressMeter
 using BenchmarkTools
 
-include("addm_functions.jl")
-include("ddm_functions.jl")
+include("structs.jl")
+include("simulate_trial.jl")
+include("get_trial_likelihood.jl")
+include("grid_search.jl")
 include("util.jl")
 
 end

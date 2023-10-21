@@ -118,7 +118,7 @@ end
 
 """
     aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, 
-                              approxStateStep::Number = 0.1, plotTrial::Bool = false, 
+                              approxStateStep::Number = 0.1,
                               decay::Number = 0.0)
 
 Compute the likelihood of the data from a single aDDM trial for these particular aDDM 
@@ -130,14 +130,12 @@ Compute the likelihood of the data from a single aDDM trial for these particular
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
 - `approxStateStep`: Number, to be used for binning the RDV axis.
-- `plotTrial`: Bool, flag that determines whether the algorithm
-    evolution for the trial should be plotted.
 - `decay`: Number, corresponds to how barriers change over time
 Returns:
 - The likelihood obtained for the given trial and model.
 """
 function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, 
-                                   approxStateStep::Number = 0.1, plotTrial::Bool = false, 
+                                   approxStateStep::Number = 0.1,
                                    decay::Number = 0.0)
     
     # Iterate over the fixations and discount the non-decision time.
@@ -293,10 +291,6 @@ function aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Numbe
         if probDownCrossing[end] > 0 
             likelihood = probDownCrossing[end]
         end
-    end
-    
-    if plotTrial
-        # TODO
     end
     
     return likelihood
@@ -512,6 +506,10 @@ end
 
 # Returns
 - `addmTrials`: Vector of aDDMTrial.s 
+
+# Todo:
+- Add option to simulate data for different value left and value right
+(not only randomly generated values)
 """
 function aDDM_simulate_trial_data(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
     
@@ -532,6 +530,10 @@ end
 
 # Returns
 - `addmTrials`: Vector of aDDMTrial.s 
+
+# Todo:
+- How do threads work in this function? 
+- Is both this function and `aDDM_simulate_trial_data` necessary?
 """
 function aDDM_simulate_trial_data_threads(addm::aDDM, fixationData::FixationData, n::Int64; cutOff::Int64 = 20000)
     
@@ -602,19 +604,4 @@ function aDDM_negative_log_likelihood_threads(addmTrials::Vector{aDDMTrial}, d::
     negative_log_likelihood = -sum(log.(likelihoods))
     
     return negative_log_likelihood
-end
-
-
-function aDDM_total_likelihood(addmTrials::Vector{aDDMTrial}, d::Number, σ::Number, θ::Number; 
-                              barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
-                              
-    addm = aDDM(d, σ, θ, barrier = barrier, decay = decay, nonDecisionTime = nonDecisionTime, bias = bias)
-    likelihoods = Vector{Float64}(undef, length(addmTrials))
-    
-    @threads for i in 1:length(addmTrials)
-        likelihoods[i] = aDDM_get_trial_likelihood(addm, addmTrials[i])
-    end
-
-    total_likelihood = sum(likelihoods)
-    return total_likelihood
 end

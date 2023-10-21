@@ -56,14 +56,14 @@ Base.@kwdef mutable struct DDM
         elseif bias >= barrier
             throw(ValueError("Error: bias parameter must be smaller than barrier parameter."))
         end
-        params = = (d, σ, barrier, decay, nonDecisionTime, bias)
+        params = (d, σ, barrier, decay, nonDecisionTime, bias)
         new(d, σ, barrier, decay, nonDecisionTime, bias, params)
     end
 end
 
 """
     DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, 
-                             approxStateStep::Number = 0.1, plotTrial::Bool = false, 
+                             approxStateStep::Number = 0.1, 
                              decay::Number = 0)
 
 Compute the likelihood of the data from a single DDM trial for these
@@ -75,14 +75,12 @@ particular DDM parameters.
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
 - `approxStateStep`: Number, to be used for binning the RDV axis.
-- `plotTrial`: Bool, flag that determines whether the algorithm
-    evolution for the trial should be plotted.
 - `decay`: float, corresponds to how barriers change over time
 # Returns
 - The likelihood obtained for the given trial and model.
 """
 function DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, 
-                                  approxStateStep::Number = 0.1, plotTrial::Bool = false,
+                                  approxStateStep::Number = 0.1,
                                   decay::Number = 0)
     
     # Get the number of time steps for this trial.
@@ -184,10 +182,7 @@ function DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 
             likelihood = probDownCrossing[end]
         end
     end
-    
-    if plotTrial
-        # TODO
-    end
+  
     
     return likelihood
 end

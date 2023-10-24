@@ -7,21 +7,24 @@ module ADDM
 
 # Todo: Load packages with `import` instead of `using` for explicit function calls
 # Need to identify where they are referred to in each script before changing
-using Plots
-using Printf
-using Random
-using Distributions
-using Base.Threads
-using CSV
-using DataFrames
-using Statistics
-using LinearAlgebra
-using ProgressMeter
-using BenchmarkTools
+import Plots
+import Printf
+import Random
+import Distributions
+import Base.Threads
+import CSV
+import DataFrames
+import Statistics
+import LinearAlgebra
+import ProgressMeter
+import BenchmarkTools
 
-include("structs.jl")
-include("simulate_trial.jl")
-include("get_trial_likelihood.jl")
+# If you want functions exposed to the global scope when importing the package
+# through `using ADDM` then you would add `export ...` statements here
+
+include("define_model.jl")
+include("simulate_data.jl")
+include("compute_likelihood.jl")
 include("grid_search.jl")
 include("util.jl")
 

@@ -26,7 +26,7 @@ aDDM_grid_search(simData::Bool = false, expData::..., fixationData::FixationData
                 addm::aDDM, nTrials::Int64=1000, rtCutOff::Int64=30000) # additional args if simulating
 ```
 """
-function aDDM_grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
+function grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
                           θList::LinRange{Float64, Int64}, n::Int64; trials::Int64=1000, cutOff::Int64=30000, simData::Bool = false)
     
     dMLEList = Vector{Float64}(undef, n)

@@ -6,7 +6,7 @@
 
 Generate a DDM trial given the item values.
 
-# Arguments:
+# Arguments
 - `addm`: aDDM object.
 - `fixationData`: FixationData object.
 - `valueLeft`: value of the left item.
@@ -27,8 +27,13 @@ Generate a DDM trial given the item values.
     bin (i.e. given a particular fixation type and value difference,
     probabilities for all bins should add up to 1).
 - `timeBins`: array containing the time bins used in fixationDist.
-# Returns:
-- An aDDMTrial object resulting from the simulation.
+
+# Returns
+- An Trial object resulting from the simulation.
+
+# Todo
+- Response time cut off
+- Additional fixation data distributions
 """
 function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number, 
                         timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, 
@@ -64,9 +69,13 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
             trialTime += t * timeStep
             RT = trialTime
             uninterruptedLastFixTime = latency
-            return aDDMTrial(tRDV, RT, choice, valueLeft, valueRight, 
-                             fixItem=fixItem, fixTime=fixTime, fixRDV=fixRDV, 
-                             uninterruptedLastFixTime=uninterruptedLastFixTime)
+            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            trial.fixItem = fixItem 
+            trial.fixTime = fixTime 
+            trial.fixRDV = fixRDV
+            trial.uninterruptedLastFixTime = uninterruptedLastFixTime
+            trial.RDV = tRDV
+            return trial
         end
     end
 
@@ -157,9 +166,9 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
             if currFixLocation == 0
                 μ = 0
             elseif currFixLocation == 1
-                μ = addm.d * (valueLeft - (addm.θ * valueRight))
+                μ = addm.d * ( (valueLeft + addm.η) - (addm.θ * valueRight))
             elseif currFixLocation == 2
-                μ = addm.d * ((addm.θ * valueLeft) - valueRight)
+                μ = addm.d * ((addm.θ * valueLeft) - (valueRight + addm.η))
             end
 
             # Sample the change in RDV from the distribution.
@@ -191,17 +200,18 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
         trialTime += currFixTime - (currFixTime % timeStep)
 
     end
+
     trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
-    trial.fixItem=fixItem 
-    trial.fixTime=fixTime 
-    trial.fixRDV=fixRDV
-    trial.uninterruptedLastFixTime=uninterruptedLastFixTime
-    trial.RDV=tRDV
+    trial.fixItem = fixItem 
+    trial.fixTime = fixTime 
+    trial.fixRDV = fixRDV
+    trial.uninterruptedLastFixTime = uninterruptedLastFixTime
+    trial.RDV = tRDV
     return trial
 end
 
 """
-    DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
+    DDM_simulate_trial(ddm::aDDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
                        cutOff::Int64 = 20000)
 
 Generate a DDM trial given the item values.
@@ -216,9 +226,9 @@ Generate a DDM trial given the item values.
     response time is too long.
 
     # Returns
-- A DDMTrial object resulting from the simulation.
+- A Trial object resulting from the simulation.
 """
-function DDM_simulate_trial(;ddm::DDM, valueLeft::Number, valueRight::Number,
+function DDM_simulate_trial(;ddm::aDDM, valueLeft::Number, valueRight::Number,
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
     
     RDV = ddm.bias
@@ -232,13 +242,19 @@ function DDM_simulate_trial(;ddm::DDM, valueLeft::Number, valueRight::Number,
         # If the RDV hit one of the barriers, the trial is over.
         if abs(RDV) >= ddm.barrier
             choice = RDV >= 0 ? -1 : 1
-            return DDMTrial(tRDV[1:time + 1], time * timeStep, choice, valueLeft, valueRight)
+            RT =  time * timeStep
+            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            trial.RDV = tRDV[1:time + 1]
+            return trial
         end
 
         # If the response time is higher than the cutoff, the trial is over.
         if time * timeStep >= cutOff
             choice = RDV >= 0 ? 1 : -1
-            return DDMTrial(tRDV[1:time + 1], time * timeStep, choice, valueLeft, valueRight)
+            RT =  time * timeStep
+            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            trial.RDV = tRDV[1:time + 1]
+            return trial
         end
 
         # Sample the change in RDV from the distribution.
@@ -259,22 +275,26 @@ function DDM_simulate_trial(;ddm::DDM, valueLeft::Number, valueRight::Number,
     return trial
 end
 
-function simulate_trial(;addm::aDDM, valueLeft::Number, valueRight::Number, 
+function simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number, 
   timeStep::Number = 10.0, cutOff::Number = 10000,
   fixationData::FixationData = nothing, numFixDists::Int64 = 3, 
-  fixationDist = nothing, timeBins = nothing0)
+  fixationDist = nothing, timeBins = nothing)
 
   if fixationData == nothing
-    DDM_simulate_trial(;ddm::aDDM = addm, 
+    DDM_simulate_trial(;ddm::aDDM = model, 
                         valueLeft::Number = valueLeft, valueRight::Number = valueRight,
                         timeStep::Number = timeStep, cutOff::Int64 = cutOff)
   else
-    aDDM_simulate_trial(;addm::aDDM = addm, fixationData::FixationData = fixationData, 
+    aDDM_simulate_trial(;addm::aDDM = model, fixationData::FixationData = fixationData, 
                         valueLeft::Number = valueLeft, valueRight::Number = valueRight; 
-                        timeStep::Number = timeStep, numFixDists::Int64=numFixDists, 
-                        fixationDist=fixationDist, 
-                        timeBins=timeBins, cutOff::Number=cutOff)
+                        timeStep::Number = timeStep, numFixDists::Int64 = numFixDists, 
+                        fixationDist = fixationDist, 
+                        timeBins = timeBins, cutOff::Number = cutOff)
 
   end
+
+end
+
+function simulate_data(;model::aDDM)
 
 end

@@ -275,26 +275,65 @@ function DDM_simulate_trial(;ddm::aDDM, valueLeft::Number, valueRight::Number,
     return trial
 end
 
-function simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number, 
-  timeStep::Number = 10.0, cutOff::Number = 10000,
-  fixationData::FixationData = nothing, numFixDists::Int64 = 3, 
-  fixationDist = nothing, timeBins = nothing)
+# Function with multiple methods depending on the arguments (multiple dispatch)
+# Works **only** with positional arguments
 
-  if fixationData == nothing
-    DDM_simulate_trial(;ddm::aDDM = model, 
-                        valueLeft::Number = valueLeft, valueRight::Number = valueRight,
-                        timeStep::Number = timeStep, cutOff::Int64 = cutOff)
-  else
-    aDDM_simulate_trial(;addm::aDDM = model, fixationData::FixationData = fixationData, 
-                        valueLeft::Number = valueLeft, valueRight::Number = valueRight; 
-                        timeStep::Number = timeStep, numFixDists::Int64 = numFixDists, 
-                        fixationDist = fixationDist, 
-                        timeBins = timeBins, cutOff::Number = cutOff)
+function simulate_trial(model::aDDM, valueLeft::Number, valueRight::Number, 
+  timeStep::Number = 10.0, cutOff::Number = 10000)
 
-  end
+  trial = DDM_simulate_trial(;ddm = model, 
+                        valueLeft = valueLeft, valueRight = valueRight,
+                        timeStep = timeStep, cutOff = cutOff)
+  return trial
+end
+
+# Having `fixationData` as a required argument allows multiple dispatch
+# This way `aDDM_simulate_trial` is called when fixationData is provided
+
+function simulate_trial(model::aDDM, valueLeft::Number, valueRight::Number, 
+  fixationData::FixationData, timeStep::Number = 10.0, cutOff::Number = 10000, 
+  numFixDists::Int64 = 3, fixationDist = nothing, timeBins = nothing)
+
+  trial = aDDM_simulate_trial(;addm = model, fixationData = fixationData, 
+                      valueLeft = valueLeft, valueRight = valueRight, 
+                      timeStep = timeStep, numFixDists = numFixDists, 
+                      fixationDist = fixationDist, 
+                      timeBins = timeBins, cutOff = cutOff)
+
+  return trial
 
 end
 
-function simulate_data(;model::aDDM)
+# 1. Multiple dispatch is nice but how will it extend to `simulate_data` which can also take custom simulator functions?
+# 2. What should the type of stimuli be?
+
+function simulate_data(model::aDDM, stimuli::Dict, simulator_fn::Function, kwargs...)
+  
+  # Check simulator_fn is defined in the namespace
+  if !(isdefined(Main, :simulator_fn) && getproperty(Main, :simulator_fn) isa Function)
+    throw(RuntimeError("simulator_fn not defined in this scope."))
+  end
+  
+  # Check model has all parameters required for simulator_fn specified
+
+  # Check stimuli has the valueLeft and valueRight
+  if !(:valueLeft in keys(stimuli) || "valueLeft" in keys(stimuli))
+    throw(RuntimeError("valueLeft not specified in stimuli"))
+  end
+
+  if !(:valueRight in keys(stimuli) || "valueRight" in keys(stimuli))
+    throw(RuntimeError("valueRight not specified in stimuli"))
+  end
+
+  # Extract valueLeft and valueRight from stimuli
+
+  # Feed the model and the stimuli to the simulator function
+  n = # length of stimuli
+  SimData = Vector{Trial}(undef, n)
+    @threads for i in 1:n # how does this define how many threads are used?
+        SimData[i] = simulator_fn(model = model, ...)
+    end
+
+  return SimData
 
 end

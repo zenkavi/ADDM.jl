@@ -11,20 +11,29 @@ MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, decay = 
 # ### Define stimuli
 
 # Option 1: Read in from CSV
-MyStims = CSV.File(..., delim=",")
+fn = ...
+MyStims = CSV.File(fn, delim=",")
 
 # Option 2: Create random stimuli
 MyStims = ...
 
+# ### Define fixationData
+fixationData = ...
+
 # ### Simulate data
-SimData = ADDM.simulate_data(aDDM = MyModel, stimuli = MyStims, simulator_fn = ...)
+# Defining only required args without defaults
+MyArgs = (fixationData = fixationData)
+
+# Note that these are positional arguments for code efficiency
+SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 
 # ### Recover parameters 
 
 # Option 1: Grid Search
 
 # Option 1.1: Read in grid
-ParGrid = CSV.File(..., delim=",")
+fn = ...
+ParGrid = CSV.File(fn, delim=",")
 OptimPars = ADDM.grid_search(aDDM = MyModel, data = SimData, grid = ParGrid, returnAll = false)
 
 # Option 1.2: Define grid 
@@ -37,10 +46,12 @@ OptimPars = ADDM.grid_search(aDDM = MyModel, data = SimData, StartPoints = ..., 
 # ## Parameter recovery on empirical data
 
 # ### Read in empirical data
-SubjectData = CSV.File(..., delim=",")
+fn = ...
+SubjectData = CSV.File(fn, delim=",")
 
 # Grid Search
-ParGrid = CSV.File(..., delim=",")
+fn = ...
+ParGrid = CSV.File(fn, delim=",")
 OptimPars, LogLikelihoods = ADDM.grid_search(aDDM = MyModel, data = SimData, grid = ParGrid, returnAll = true)
 
 # ## Visualizations

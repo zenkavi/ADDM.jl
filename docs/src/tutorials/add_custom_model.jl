@@ -16,6 +16,9 @@ MyCustomModel.NewParameter = 3
 # Optional:
 # Input: cutOff
 # Output: RDV
+
+# Required kwargs model, valueLeft, valueRight, timeStep, cutOff
+# Others kwaargs can be added and passed to `simulator_args` in `simulate_data`
 function my_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
   timeStep::Number = 10.0, cutOff::Int64 = 20000)
 

@@ -1,5 +1,5 @@
 """
-    aDDM_simulate_trial(addm::aDDM, fixationData::FixationData, 
+    aDDM_simulate_trial(model::aDDM, fixationData::FixationData, 
                         valueLeft::Number, valueRight::Number; timeStep::Number=10.0, 
                         numFixDists::Int64=3 , fixationDist=nothing, timeBins=nothing, 
                         cutOff::Number=100000)
@@ -7,7 +7,7 @@
 Generate a DDM trial given the item values.
 
 # Arguments
-- `addm`: aDDM object.
+- `model`: aDDM object.
 - `fixationData`: FixationData object.
 - `valueLeft`: value of the left item.
 - `valueRight`: value of the right item.
@@ -35,7 +35,7 @@ Generate a DDM trial given the item values.
 - Response time cut off
 - Additional fixation data distributions
 """
-function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number, 
+function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number, 
                         timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, 
                         timeBins=nothing, cutOff::Number=100000)
     
@@ -45,7 +45,7 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
     fixTime = Number[]
     fixRDV = Number[]
 
-    RDV = addm.bias
+    RDV = model.bias
     trialTime = 0
     choice = 0
     tRDV = Number[RDV]
@@ -54,14 +54,14 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
     
     # Sample and iterate over the latency for this trial.
     latency = rand(fixationData.latencies)
-    remainingNDT = addm.nonDecisionTime - latency
+    remainingNDT = model.nonDecisionTime - latency
     for t in 1:Int64(latency ÷ timeStep)
         # Sample the change in RDV from the distribution.
-        RDV += rand(Normal(0, addm.σ))
+        RDV += rand(Normal(0, model.σ))
         push!(tRDV, RDV)
 
         # If the RDV hit one of the barriers, the trial is over.
-        if abs(RDV) >= addm.barrier
+        if abs(RDV) >= model.barrier
             choice = RDV >= 0 ? -1 : 1
             push!(fixRDV, RDV)
             push!(fixItem, 0)
@@ -132,11 +132,11 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
         if remainingNDT > 0
             for t in 1:Int64(remainingNDT ÷ timeStep)
                 # Sample the change in RDV from the distribution.
-                RDV += rand(Normal(0, addm.σ))
+                RDV += rand(Normal(0, model.σ))
                 push!(tRDV, RDV)
 
                 # If the RDV hit one of the barriers, the trial is over.
-                if abs(RDV) >= addm.barrier
+                if abs(RDV) >= model.barrier
                     choice = RDV >= 0 ? -1 : 1
                     push!(fixRDV, RDV)
                     push!(fixItem, currFixLocation)
@@ -166,17 +166,17 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
             if currFixLocation == 0
                 μ = 0
             elseif currFixLocation == 1
-                μ = addm.d * ( (valueLeft + addm.η) - (addm.θ * valueRight))
+                μ = model.d * ( (valueLeft + model.η) - (model.θ * valueRight))
             elseif currFixLocation == 2
-                μ = addm.d * ((addm.θ * valueLeft) - (valueRight + addm.η))
+                μ = model.d * ((model.θ * valueLeft) - (valueRight + model.η))
             end
 
             # Sample the change in RDV from the distribution.
-            RDV += rand(Normal(μ, addm.σ))
+            RDV += rand(Normal(μ, model.σ))
             push!(tRDV, RDV)
 
             # If the RDV hit one of the barriers, the trial is over.
-            if abs(RDV) >= addm.barrier
+            if abs(RDV) >= model.barrier
                 choice = RDV >= 0 ? -1 : 1
                 push!(fixRDV, RDV)
                 push!(fixItem, currFixLocation)
@@ -211,13 +211,13 @@ function aDDM_simulate_trial(;addm::aDDM, fixationData::FixationData, valueLeft:
 end
 
 """
-    DDM_simulate_trial(ddm::aDDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
+    DDM_simulate_trial(model::aDDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
                        cutOff::Int64 = 20000)
 
 Generate a DDM trial given the item values.
 
 # Arguments
-- `ddm`: DDM object.
+- `model`: aDDM object.
 - `valueLeft`: value of the left item.
 - `valueRight`: value of the right item.
 - `timeStep`: Number, value in milliseconds to be used for binning the
@@ -228,19 +228,19 @@ Generate a DDM trial given the item values.
     # Returns
 - A Trial object resulting from the simulation.
 """
-function DDM_simulate_trial(;ddm::aDDM, valueLeft::Number, valueRight::Number,
+function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
     
-    RDV = ddm.bias
+    RDV = model.bias
     elapsedNDT = 0
     tRDV = Vector{Number}(undef, cutOff)
-    valueDiff = ddm.d * (valueLeft - valueRight)
+    valueDiff = model.d * (valueLeft - valueRight)
 
     for time in 0:cutOff-1
         tRDV[time + 1] = RDV
 
         # If the RDV hit one of the barriers, the trial is over.
-        if abs(RDV) >= ddm.barrier
+        if abs(RDV) >= model.barrier
             choice = RDV >= 0 ? -1 : 1
             RT =  time * timeStep
             trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
@@ -258,14 +258,14 @@ function DDM_simulate_trial(;ddm::aDDM, valueLeft::Number, valueRight::Number,
         end
 
         # Sample the change in RDV from the distribution.
-        if elapsedNDT < (ddm.nonDecisionTime ÷ timeStep)
+        if elapsedNDT < (model.nonDecisionTime ÷ timeStep)
             μ = 0
             elapsedNDT += 1
         else
             μ = valueDiff
         end
 
-        RDV += rand(Normal(μ, ddm.σ))
+        RDV += rand(Normal(μ, model.σ))
     end
 
     choice = RDV >= 0 ? 1 : -1
@@ -275,64 +275,50 @@ function DDM_simulate_trial(;ddm::aDDM, valueLeft::Number, valueRight::Number,
     return trial
 end
 
-# Function with multiple methods depending on the arguments (multiple dispatch)
-# Works **only** with positional arguments
+"""
+    simulate_trial(model::aDDM, stimuli, simulator_fn, simulator_args = (timeStep = 10.0, cutOff = 20000))
 
-function simulate_trial(model::aDDM, valueLeft::Number, valueRight::Number, 
-  timeStep::Number = 10.0, cutOff::Number = 10000)
+Simulate data using the model for the given stimuli.
 
-  trial = DDM_simulate_trial(;ddm = model, 
-                        valueLeft = valueLeft, valueRight = valueRight,
-                        timeStep = timeStep, cutOff = cutOff)
-  return trial
-end
+# Arguments
+- `model`: aDDM object.
+- `stimuli`: Named tuple with `valueLeft` and `valueRight` specifying the values of options.
+- `simulator_fn`: Name of the function that simulates a trial for the given model.
+- `simulator_args`: Named tuple containing kwargs that should be fed to `simulator_fn`
 
-# Having `fixationData` as a required argument allows multiple dispatch
-# This way `aDDM_simulate_trial` is called when fixationData is provided
-
-function simulate_trial(model::aDDM, valueLeft::Number, valueRight::Number, 
-  fixationData::FixationData, timeStep::Number = 10.0, cutOff::Number = 10000, 
-  numFixDists::Int64 = 3, fixationDist = nothing, timeBins = nothing)
-
-  trial = aDDM_simulate_trial(;addm = model, fixationData = fixationData, 
-                      valueLeft = valueLeft, valueRight = valueRight, 
-                      timeStep = timeStep, numFixDists = numFixDists, 
-                      fixationDist = fixationDist, 
-                      timeBins = timeBins, cutOff = cutOff)
-
-  return trial
-
-end
-
-# 1. Multiple dispatch is nice but how will it extend to `simulate_data` which can also take custom simulator functions?
-# 2. What should the type of stimuli be?
-
-function simulate_data(model::aDDM, stimuli::Dict, simulator_fn::Function, kwargs...)
+# Returns
+- Vector of Trial objects containing simulated data.
+"""
+function simulate_data(model::aDDM, stimuli, simulator_fn, simulator_args = (timeStep = 10.0, cutOff = 20000))
   
-  # Check simulator_fn is defined in the namespace
-  if !(isdefined(Main, :simulator_fn) && getproperty(Main, :simulator_fn) isa Function)
-    throw(RuntimeError("simulator_fn not defined in this scope."))
-  end
-  
-  # Check model has all parameters required for simulator_fn specified
-
-  # Check stimuli has the valueLeft and valueRight
-  if !(:valueLeft in keys(stimuli) || "valueLeft" in keys(stimuli))
-    throw(RuntimeError("valueLeft not specified in stimuli"))
+   # Check stimuli has the valueLeft and valueRight
+  if !(:valueLeft in keys(stimuli))
+    # throw(RuntimeError("valueLeft not specified in stimuli"))
+    error("valueLeft not specified in stimuli")
   end
 
-  if !(:valueRight in keys(stimuli) || "valueRight" in keys(stimuli))
-    throw(RuntimeError("valueRight not specified in stimuli"))
+  if !(:valueRight in keys(stimuli))
+    # throw(RuntimeError("valueRight not specified in stimuli"))
+    error("valueRight not specified in stimuli")
   end
 
   # Extract valueLeft and valueRight from stimuli
+  valueLefts = stimuli.valueLeft
+  valueRights = stimuli.valueRight
 
   # Feed the model and the stimuli to the simulator function
-  n = # length of stimuli
+  n = length(valueLefts) # length of stimuli
   SimData = Vector{Trial}(undef, n)
-    @threads for i in 1:n # how does this define how many threads are used?
-        SimData[i] = simulator_fn(model = model, ...)
-    end
+
+  # how does this define how many threads are used?
+  # afaiu this needs to be specific *before* julia is started e.g. by `julia --threads 4`
+  @threads for i in 1:n 
+
+    # The `simulator_args...` notation maps the NamedTuple to the kwargs of the simulator_fn
+    # The named tuple `simulator_args` does not have to have all the kwargs
+    # Additional kwargs can be specified before or after `simulator_args`
+    SimData[i] = simulator_fn(;model = model, valueLeft = valueLefts[i], valueRight = valueRights[i], simulator_args...)
+  end
 
   return SimData
 

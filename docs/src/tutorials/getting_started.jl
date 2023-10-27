@@ -10,15 +10,28 @@ MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, decay = 
 
 # ### Define stimuli
 
+# This should be of type NamedTuple
+# Required field names (case sensitive): `valueLeft` and `valueRight` 
+
 # Option 1: Read in from CSV
-fn = ...
-MyStims = CSV.File(fn, delim=",")
+fn = "./data/stims.csv"
+tmp = DataFrame(CSV.File(fn, delim=","))
+MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 
 # Option 2: Create random stimuli
-MyStims = ...
+# Random.seed!(38535)
+# MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 # ### Define fixationData
-fixationData = ...
+# This should be of type `FixationData`
+# Required keys for aDDM_simulate_trial: latencies, probFixLeftFirst, fixDistType, fixations, transitions
+# these are also the outputs of get_empirical_distributions 
+# Previously the usage had been
+# ```
+# data = load_data_from_csv("expdata.csv", "fixations.csv", convertItemValues=convert_item_values)
+# fixationData = get_empirical_distributions(data, fixDistType="simple")
+# ```
+fixationData = FixationData(probFixLeftFirst, latencies, transitions, fixations; fixDistType="fixation")
 
 # ### Simulate data
 # Defining only required args without defaults
@@ -33,7 +46,7 @@ SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 
 # Option 1.1: Read in grid
 fn = ...
-ParGrid = CSV.File(fn, delim=",")
+ParGrid = DataFrame(CSV.File(fn, delim=","))
 OptimPars = ADDM.grid_search(aDDM = MyModel, data = SimData, grid = ParGrid, returnAll = false)
 
 # Option 1.2: Define grid 
@@ -46,12 +59,12 @@ OptimPars = ADDM.grid_search(aDDM = MyModel, data = SimData, StartPoints = ..., 
 # ## Parameter recovery on empirical data
 
 # ### Read in empirical data
-fn = ...
-SubjectData = CSV.File(fn, delim=",")
+fn = "./data/subject_data.csv"
+SubjectData = DataFrame(CSV.File(fn, delim=","))
 
 # Grid Search
-fn = ...
-ParGrid = CSV.File(fn, delim=",")
+fn = "./data/parameter_grid.csv"
+ParGrid = DataFrame(CSV.File(fn, delim=","))
 OptimPars, LogLikelihoods = ADDM.grid_search(aDDM = MyModel, data = SimData, grid = ParGrid, returnAll = true)
 
 # ## Visualizations

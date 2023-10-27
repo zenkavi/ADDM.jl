@@ -250,7 +250,7 @@ function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
 
         # If the response time is higher than the cutoff, the trial is over.
         if time * timeStep >= cutOff
-            choice = RDV >= 0 ? 1 : -1
+            choice = RDV >= 0 ? -1 : 1
             RT =  time * timeStep
             trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
             trial.RDV = tRDV[1:time + 1]
@@ -268,7 +268,7 @@ function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
         RDV += rand(Normal(μ, model.σ))
     end
 
-    choice = RDV >= 0 ? 1 : -1
+    choice = RDV >= 0 ? -1 : 1
     RT = cutOff * timeStep
     trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
     trial.RDV = tRDV

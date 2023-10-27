@@ -49,7 +49,6 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
             push!(data[subjectId], Trial(choice = trial_df.choice[1], RT = trial_df.rt[1], valueLeft = itemLeft, valueRight = itemRight) ) 
             end
         end
-    end
     
     # Load fixation data from CSV file if specified.
     if fixationsFileName != nothing

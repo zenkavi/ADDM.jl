@@ -14,6 +14,15 @@ MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, decay = 
 # Required field names (case sensitive): `valueLeft` and `valueRight` 
 
 # Option 1: Read in from CSV
+# Note that the modules must be loaded beforehand
+# These are dependencies for the ADDM module *but* the precompiled module gives access to 
+# these dependencies only in the scope of ADDM.
+# `ADDM.load_data_from_csv` that requires both of these packages would still work but
+# the code below would not without importing these modules to the current interactive scope
+
+using CSV
+using DataFrames
+
 fn = "./data/stims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
@@ -37,7 +46,7 @@ fixationData = FixationData(probFixLeftFirst, latencies, transitions, fixations;
 # Defining only required args without defaults
 MyArgs = (fixationData = fixationData)
 
-# Note that these are positional arguments for code efficiency
+# Note that these are *positional* arguments for code efficiency
 SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 
 # ### Recover parameters 

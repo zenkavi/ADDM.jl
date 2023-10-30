@@ -60,7 +60,7 @@ function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 
     stateStep = addm.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
-    states = range(-1 + stateStep / 2, 1 - stateStep/2, step=stateStep)
+    states = range(-1*(addm.barrier) + stateStep / 2, 1*(addm.barrier) - stateStep/2, step=stateStep)
     
     # Find the state corresponding to the bias parameter.
     biasState = argmin(abs.(states .- addm.bias))
@@ -132,7 +132,7 @@ function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 
             # that the area under the curves for the probability 
             # distributions probUpCrossing and probDownCrossing add up to 1.
             prStatesNew = stateStep * (normpdf * prStates[:,time])
-            prStatesNew[(states .>= 1) .| (states .<= -1)] .= 0
+            prStatesNew[(states .>= barrierUp[time]) .| (states .<= barrierDown[time])] .= 0
             
             # Calculate the probabilities of crossing the up barrier and
             # the down barrier. This is given by the sum, over all states
@@ -210,7 +210,7 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
     stateStep = ddm.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
-    states = range(-1 + stateStep / 2, 1 - stateStep/2, step=stateStep)
+    states = range(-1*(ddm.barrier) + stateStep / 2, 1*(ddm.barrier) - stateStep/2, step=stateStep)
     
     # Find the state corresponding to the bias parameter.
     biasState = argmin(abs.(states .- ddm.bias))
@@ -255,7 +255,7 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
         # and probDownCrossing add up to 1.
         @. normpdf = pdf(Normal(μ, ddm.σ), changeMatrix)
         prStatesNew = stateStep * (normpdf * prStates[:,time])
-        prStatesNew[(states .>= 1) .| (states .<= -1)] .= 0
+        prStatesNew[(states .>= barrierUp[time]) .| (states .<= barrierDown[time])] .= 0
         
         # Calculate the probabilities of crossing the up barrier and the
         # down barrier. This is given by the sum, over all states A, of the

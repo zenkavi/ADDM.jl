@@ -66,14 +66,7 @@ model simulations.
     be used when indexing the fixation distributions.
 - `subjectIds`: list of strings corresponding to the subjects whose data
     should be used. If not provided, all existing subjects will be used.
-- `useOddTrials`: boolean, whether or not to use odd trials when creating the
-    distributions.
-- `useEvenTrials`: boolean, whether or not to use even trials when creating
-    the distributions.
-- `useCisTrials`: boolean, whether or not to use cis trials when creating the
-    distributions (for perceptual decisions only).
-- `useTransTrials`: boolean, whether or not to use trans trials when creating
-    the distributions (for perceptual decisions only).
+
 # Return
 - A FixationData object.
 """
@@ -81,11 +74,7 @@ function get_empirical_distributions(data::Dict; timeStep::Number = 10,
                                      maxFixTime::Number = 3000, 
                                      numFixDists::Int64 = 3, fixDistType::String = "fixation", 
                                      valueDiffs::Vector{Int64} = collect(-3:1:3), 
-                                     subjectIds::Vector{String} = String[], 
-                                     useOddTrials::Bool = true,
-                                     useEvenTrials::Bool = true, 
-                                     useCisTrials::Bool = true,
-                                     useTransTrials::Bool = true)
+                                     subjectIds::Vector{String} = String[])
     
     fixDistType = String(fixDistType)
     availableTypes = ["simple", "difficulty", "fixation"]
@@ -112,19 +101,7 @@ function get_empirical_distributions(data::Dict; timeStep::Number = 10,
     subjectIds = length(subjectIds) > 0 ? [String(subj) for subj in subjectIds] : collect(keys(data))
 
     for subjectId in subjectIds
-        for (trialId, trial) in enumerate(data[subjectId])
-            if !useOddTrials && mod(trialId, 2) != 0
-                continue
-            elseif !useEvenTrials && mod(trialId, 2) == 0
-                continue
-            end
-            isCisTrial = trial.ddmTrial.valueLeft * trial.ddmTrial.valueRight >= 0 ? true : false
-            isTransTrial = trial.ddmTrial.valueLeft * trial.ddmTrial.valueRight <= 0 ? true : false
-            if (!useCisTrials && isCisTrial && !isTransTrial)
-                continue
-            elseif (!useTransTrials && isTransTrial && !isCisTrial)
-                continue
-            end
+        for trial in data[subjectId]
             
             # Discard trial if it has 1 or less item fixations.
             items = trial.fixItem
@@ -133,10 +110,11 @@ function get_empirical_distributions(data::Dict; timeStep::Number = 10,
                 continue
             end
             
-            fixUnfixValueDiffs = Dict(1 => trial.ddmTrial.valueLeft - trial.ddmTrial.valueRight, 
-                                      2 => trial.ddmTrial.valueRight - trial.ddmTrial.valueLeft)
+            fixUnfixValueDiffs = Dict(1 => trial.valueLeft - trial.valueRight, 
+                                      2 => trial.valueRight - trial.valueLeft)
             
             # Find the last item fixation in this trial.
+            # Use excludeCount as the stopping point for trail.fixItem in the calculations below.
             excludeCount = 0
             for i in length(trial.fixItem):-1:1
                 excludeCount += 1
@@ -171,7 +149,7 @@ function get_empirical_distributions(data::Dict; timeStep::Number = 10,
                         if fixDistType == "simple"
                             push!(fixationsList[fixNumber], trial.fixTime[i])
                         elseif fixDistType == "difficulty"
-                            valueDiff = abs(trial.ddmTrial.valueLeft - trial.ddmTrial.valueRight)
+                            valueDiff = abs(trial.valueLeft - trial.valueRight)
                             push!(fixationsList[fixNumber][valueDiff], trial.fixTime[i])
                         elseif fixDistType == "fixation"
                             valueDiff = fixUnfixValueDiffs[trial.fixItem[i]]

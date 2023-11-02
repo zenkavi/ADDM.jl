@@ -39,13 +39,18 @@ struct FixationData
 end
 
 """
+    process_fixations(data::Dict; timeStep::Number = 10, 
+                                     maxFixTime::Number = 3000, 
+                                     numFixDists::Int64 = 3, fixDistType::String = "fixation", 
+                                     valueDiffs::Vector{Int64} = collect(-3:1:3), 
+                                     subjectIds::Vector{String} = String[])
 
 Create empirical distributions from the data to be used when generating
 model simulations.
 
 # Arguments
 - `data`: a dict, indexed by subjectId, where each entry is a list of
-    Trial objects.
+    Trial objects. E.g. output of `load_data_from_csv`
 - `timeStep`: integer, minimum duration of a fixation to be considered, in
     miliseconds.
 - `maxFixTime`: integer, maximum duration of a fixation to be considered, in
@@ -70,11 +75,11 @@ model simulations.
 # Return
 - A FixationData object.
 """
-function get_empirical_distributions(data::Dict; timeStep::Number = 10, 
-                                     maxFixTime::Number = 3000, 
-                                     numFixDists::Int64 = 3, fixDistType::String = "fixation", 
-                                     valueDiffs::Vector{Int64} = collect(-3:1:3), 
-                                     subjectIds::Vector{String} = String[])
+function process_fixations(data::Dict; timeStep::Number = 10, 
+                          maxFixTime::Number = 3000, 
+                          numFixDists::Int64 = 3, fixDistType::String = "fixation", 
+                          valueDiffs::Vector{Int64} = collect(-3:1:3), 
+                          subjectIds::Vector{String} = String[])
     
     fixDistType = String(fixDistType)
     availableTypes = ["simple", "difficulty", "fixation"]
@@ -180,4 +185,38 @@ function get_empirical_distributions(data::Dict; timeStep::Number = 10,
     end
 
     return FixationData(probFixLeftFirst, latencies, transitions, fixations, fixDistType=fixDistType)
+end
+
+function convert_to_fixationDist(fixationData::FixationData; timeStep::Number = 10)
+
+    if fixationData.fixDistType != "fixation"
+      throw(error("fixDistType must be fixation to convert to fixationDist because fixationDist is indexed by value difference."))
+    end
+
+    fixations = fixationData.fixations
+    numFixDists = length(keys(fixations))
+    valueDiffs = keys(fixations[1])
+
+    # timeBins should be the same for all fixation types (1st, 2nd etc.)
+    # Compute them across fixations regardless of type
+    allDurations = Number[]
+    for fixNumber in 1:numFixDists
+      for valueDiff in valueDiffs
+          append!(allDurations, fixations[fixNumber][valueDiff][1])
+      end
+    end
+
+    timeBins = collect(minimum(allDurations):timeStep:maximum(allDurations))
+
+    fixationDist = Dict()
+
+    for fixNumber in 1:numFixDists
+        fixationDist[fixNumber] = Dict()
+        for valueDiff in valueDiffs
+            fixationDist[fixNumber][valueDiff] = ... # the probability distribution
+        end
+    end
+
+    return fixationDist, timeBins
+
 end

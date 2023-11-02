@@ -32,15 +32,11 @@ MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 # MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 # ### Define fixationData
-# This should be of type `FixationData`
-# Required keys for aDDM_simulate_trial: latencies, probFixLeftFirst, fixDistType, fixations, transitions
-# these are also the outputs of get_empirical_distributions 
-# Previously the usage had been
-# ```
-# data = load_data_from_csv("expdata.csv", "fixations.csv", convertItemValues=convert_item_values)
-# fixationData = get_empirical_distributions(data, fixDistType="simple")
-# ```
-fixationData = FixationData(probFixLeftFirst, latencies, transitions, fixations; fixDistType="fixation")
+# This should be of type `FixationData` 
+# If `fixDistType` is not `simple` it must also have fixations for the same value difference values in the stimuli
+
+data = load_data_from_csv("./data/expdata.csv", "./data/fixations.csv")
+fixationData = process_fixations(data, fixDistType="fixations")
 
 # ### Simulate data
 # Defining only required args without defaults

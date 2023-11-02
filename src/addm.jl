@@ -2,7 +2,7 @@ module ADDM
 
 # Don't think we should expose these functions directly to the scope
 # Not exporting them as below would require more explicit calling 
-# e.g. ADDM.DefineModel(...) or ADDM.GridSearch(...)
+# e.g. ADDM.define_model(...) or ADDM.grid_search(...)
 # export define_model, simulate_data, grid_search
 
 using Plots

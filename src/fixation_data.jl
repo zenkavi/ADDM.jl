@@ -187,6 +187,24 @@ function process_fixations(data::Dict; timeStep::Number = 10,
     return FixationData(probFixLeftFirst, latencies, transitions, fixations, fixDistType=fixDistType)
 end
 
+"""
+    convert_to_fixationDist(fixationData::FixationData; timeStep::Number = 10)
+
+Create empirical distributions from the data to be used when generating
+model simulations.
+
+# Arguments
+- `fixationData`: FixationData type that is the output of `process_fixations`.
+- `timeStep`: integer, timeBin size in ms.
+
+# Return
+- `fixationDist`: Dictionary indexed by value difference and fixation type.
+  Contains the distributions of fixation durations in each time bin specifiu
+- `timeBinMidPoints`: Mid points of the time bins, for which the fixation 
+  duration distributions were calculated. Will be the durations sampled in 
+  `addm_simulate_trial` if using `fixationDist` instead of `fixationData`
+"""
+
 function convert_to_fixationDist(fixationData::FixationData; timeStep::Number = 10)
 
     if fixationData.fixDistType != "fixation"
@@ -213,10 +231,17 @@ function convert_to_fixationDist(fixationData::FixationData; timeStep::Number = 
     for fixNumber in 1:numFixDists
         fixationDist[fixNumber] = Dict()
         for valueDiff in valueDiffs
-            fixationDist[fixNumber][valueDiff] = ... # the probability distribution
+            # the probability distribution of fixation durations
+            fixationDist[fixNumber][valueDiff] = normalize(fit(Histogram, fixations[fixNumber][valueDiff][1], timeBins)).weights 
         end
     end
 
-    return fixationDist, timeBins
+    # Drop last timeBin edge
+    pop!(timeBins)
+
+    # Add half of the timestep to make time bins refer to the midpoint of the edges
+    timeBinMidPoints = timeBins .+ (timeStep/2)
+
+    return fixationDist, timeBinMidPoints
 
 end

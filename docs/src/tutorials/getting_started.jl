@@ -6,7 +6,8 @@ using ADDM
 # ## Parameter recovery on simulated data
 
 # ### Define model
-MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, decay = 0, nonDecisionTime = 100, bias = 0.0)
+MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, 
+                decay = 0, nonDecisionTime = 100, bias = 0.0)
 
 # ### Define stimuli
 
@@ -28,19 +29,35 @@ tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 
 # Option 2: Create random stimuli
+# Note that if you're going to create random stimuli you should make sure to have value differences
+# that correspond to what you plan to fit in for fixation data
+
 # Random.seed!(38535)
 # MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 # ### Define fixationData
-# This should be of type `FixationData` 
-# If `fixDistType` is not `simple` it must also have fixations for the same value difference values in the stimuli
+# Fixation information that will be fed in to the model for simulations should be of 
+# type `FixationData`. This type organizes empirical fixations to distributions
 
-data = load_data_from_csv("./data/expdata.csv", "./data/fixations.csv")
-fixationData = process_fixations(data, fixDistType="fixations")
+# This organizes both the behavioral and the fixation data as a dictionary of Trial objects indexed by subject
+data = ADDM.load_data_from_csv("./data/expdata.csv", "./data/fixations.csv")
+
+# Extract value difference information from the dataset to use in processing the fixations
+vDiffs = sort(unique([x.valueLeft - x.valueRight for x in data["1"]]))
+
+# When simulating an aDDM we need to input fixations. 
+# But instead of using the fixation data from any given subject we summarize the empricial data 
+# from all subjects as distributions from which the model samples from depending on the value 
+# difference and the fixation type (1st, 2nd etc.)
+MyFixationData = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs = vDiffs)
 
 # ### Simulate data
-# Defining only required args without defaults
-MyArgs = (fixationData = fixationData)
+# Defining additional args
+# Note this needs to me a NamedTuple, i.e. must have at least two elements.
+# Otherwise it tries to apply `iterate` to the single element which would likely end with a 
+# `MethodError`. In this example I specify `timeStep` and `cutoff` in addition to the
+# only required argument without a default `fixationData` to avoid this
+MyArgs = (timeStep = 10.0, cutOff = 20000, fixationData = MyFixationData)
 
 # Note that these are *positional* arguments for code efficiency
 SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)

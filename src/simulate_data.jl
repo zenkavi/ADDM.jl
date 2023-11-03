@@ -8,7 +8,8 @@ Generate a DDM trial given the item values.
 
 # Arguments
 - `model`: aDDM object.
-- `fixationData`: FixationData object.
+- `fixationData`: FixationData object. `Required even when using fixationDist`
+  because it specifies latencies and transitions as well.
 - `valueLeft`: value of the left item.
 - `valueRight`: value of the right item.
 - `timeStep`: Number, value in milliseconds to be used for binning
@@ -25,18 +26,19 @@ Generate a DDM trial given the item values.
     items, then by time bin. Each entry is a number between 0 and 1 
     corresponding to the probability assigned to the particular time
     bin (i.e. given a particular fixation type and value difference,
-    probabilities for all bins should add up to 1).
-- `timeBins`: array containing the time bins used in fixationDist.
+    probabilities for all bins should add up to 1). Can be obtained from
+    `fixationData` using `convert_to_fixationDist`. If using this instead
+    of `fixationData` to sample fixations make sure to specify latency and 
+    transition info in `fixationData`.
+- `timeBins`: array containing the time bins used in fixationDist. Can be
+    obtained from`fixationData` using `convert_to_fixationDist`
 
 # Returns
 - An Trial object resulting from the simulation.
-
-# Todo
-- Response time cut off
-- Additional fixation data distributions
 """
-function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData, valueLeft::Number, valueRight::Number, 
-                        timeStep::Number=10.0, numFixDists::Int64=3 , fixationDist=nothing, 
+function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData, 
+                        valueLeft::Number, valueRight::Number, 
+                        timeStep::Number=10.0, numFixDists::Int64=3, fixationDist=nothing, 
                         timeBins=nothing, cutOff::Number=100000)
     
     fixUnfixValueDiffs = Dict(1 => valueLeft - valueRight, 2 => valueRight - valueLeft)
@@ -107,14 +109,15 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData, valueLeft
                     currFixTime = rand(reduce(vcat, fixationData.fixations[fixNumber]))
                 elseif fixationData.fixDistType == "difficulty" # maybe add reduce() like in simple
                     valueDiff = abs(valueLeft - valueRight)
-                    currFixTime = rand(fixationData.fixations[fixNumber][valueDiff])
+                    currFixTime = rand(fixationData.fixations[fixNumber][valueDiff][1])
                 elseif fixationData.fixDistType == "fixation"
                     valueDiff = fixUnfixValueDiffs[currFixLocation]
-                    currFixTime = rand(fixationData.fixations[fixNumber][valueDiff])
+                    #[1] is here to make sure it's not sampling from 1-element Vector but from the array inside it
+                    currFixTime = rand(fixationData.fixations[fixNumber][valueDiff][1]) 
                 end
             else 
-                # TODO
-                throw(error("I HAVE NOT CODED THIS PART JUST YET"))
+              valueDiff = fixUnfixValueDiffs[currFixLocation]
+              currFixTime = sample(timeBins, Weights(fixationDist[fixNumber][valueDiff]))
             end
 
             if fixNumber < numFixDists
@@ -312,7 +315,8 @@ function simulate_data(model::aDDM, stimuli, simulator_fn, simulator_args = (tim
 
   # how does this define how many threads are used?
   # afaiu this needs to be specific *before* julia is started e.g. by `julia --threads 4`
-  @threads for i in 1:n 
+  # @threads for i in 1:n 
+  for i in 1:n 
 
     # The `simulator_args...` notation maps the NamedTuple to the kwargs of the simulator_fn
     # The named tuple `simulator_args` does not have to have all the kwargs

@@ -6,7 +6,7 @@ Compute the likelihood of the data from a single aDDM trial for these particular
   parameters.
 
 # Arguments:
-- `addm`: aDDM object.
+- `model`: aDDM object.
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
@@ -14,19 +14,19 @@ Compute the likelihood of the data from a single aDDM trial for these particular
 Returns:
 - The likelihood obtained for the given trial and model.
 """
-function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 10.0, 
+function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10.0, 
                                    approxStateStep::Number = 0.1)
     
     # Iterate over the fixations and discount the non-decision time.
-    if addm.nonDecisionTime > 0
+    if model.nonDecisionTime > 0
         correctedFixItem = Number[]
         correctedFixTime = Number[]
-        remainingNDT = addm.nonDecisionTime
+        remainingNDT = model.nonDecisionTime
         for (fItem, fTime) in zip(trial.fixItem, trial.fixTime)
             if remainingNDT > 0
                 push!(correctedFixItem, 0)
                 push!(correctedFixTime, min(remainingNDT, fTime))
-                push!(correctedFixItem, fTime)
+                push!(correctedFixItem, fItem)
                 push!(correctedFixTime, max(fTime - remainingNDT, 0))
                 remainingNDT = remainingNDT - fTime
             else
@@ -52,18 +52,18 @@ function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 
     numTimeSteps += 1
     
     # The values of the barriers can change over time.
-    barrierUp = addm.barrier ./ (1 .+ addm.decay .* (0:numTimeSteps-1))
-    barrierDown = -addm.barrier ./ (1 .+ addm.decay .* (0:numTimeSteps-1))
+    barrierUp = model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
+    barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
     
     # Obtain correct state step.
-    halfNumStateBins = ceil(addm.barrier / approxStateStep)
-    stateStep = addm.barrier / (halfNumStateBins + 0.5)
+    halfNumStateBins = ceil(model.barrier / approxStateStep)
+    stateStep = model.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
-    states = range(-1*(addm.barrier) + stateStep / 2, 1*(addm.barrier) - stateStep/2, step=stateStep)
+    states = range(-1*(model.barrier) + stateStep / 2, 1*(model.barrier) - stateStep/2, step=stateStep)
     
     # Find the state corresponding to the bias parameter.
-    biasState = argmin(abs.(states .- addm.bias))
+    biasState = argmin(abs.(states .- model.bias))
     
     # Initial probability for all states is zero, except the bias state,
     # for which the initial probability is one.
@@ -80,9 +80,9 @@ function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 
     μDict = Dict{Number, Number}()
     for fItem in 0:2
         if fItem == 1
-            μ = addm.d * ((trial.valueLeft + addm.η) - (addm.θ * trial.valueRight))
+            μ = model.d * ((trial.valueLeft + model.η) - (model.θ * trial.valueRight))
         elseif fItem == 2
-            μ = addm.d * ((addm.θ * trial.valueLeft) - (trial.valueRight + addm.η))
+            μ = model.d * ((model.θ * trial.valueLeft) - (trial.valueRight + model.η))
         else
             μ = 0
         end
@@ -103,9 +103,9 @@ function aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial timeStep::Number = 
         cdfUp = similar(changeUp[:, time])
         cdfDown = similar(changeDown[:, time])
         
-        @. normpdf = pdf(Normal(μDict[fItem], addm.σ), changeMatrix)
-        @. cdfUp = cdf(Normal(μDict[fItem], addm.σ), changeUp[:, time])
-        @. cdfDown = cdf(Normal(μDict[fItem], addm.σ), changeDown[:, time])
+        @. normpdf = pdf(Normal(μDict[fItem], model.σ), changeMatrix)
+        @. cdfUp = cdf(Normal(μDict[fItem], model.σ), changeUp[:, time])
+        @. cdfDown = cdf(Normal(μDict[fItem], model.σ), changeDown[:, time])
         pdfDict[fItem] = normpdf
         cdfUpDict[fItem] = cdfUp
         cdfDownDict[fItem] = cdfDown
@@ -184,7 +184,7 @@ Compute the likelihood of the data from a single DDM trial for these
 particular DDM parameters.
 
 # Arguments
-- `ddm`: aDDM object.
+- `model`: aDDM object.
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
@@ -192,7 +192,7 @@ particular DDM parameters.
 # Returns
 - The likelihood obtained for the given trial and model.
 """
-function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10, 
+function DDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10, 
                                   approxStateStep::Number = 0.1)
     
     # Get the number of time steps for this trial.
@@ -202,18 +202,18 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
     end
 
     # The values of the barriers can change over time.
-    barrierUp = ddm.barrier ./ (1 .+ ddm.decay .* (0:numTimeSteps-1))
-    barrierDown = -ddm.barrier ./ (1 .+ ddm.decay .* (0:numTimeSteps-1))
+    barrierUp = model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
+    barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
 
     # Obtain correct state step.
-    halfNumStateBins = ceil(ddm.barrier / approxStateStep)
-    stateStep = ddm.barrier / (halfNumStateBins + 0.5)
+    halfNumStateBins = ceil(model.barrier / approxStateStep)
+    stateStep = model.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
-    states = range(-1*(ddm.barrier) + stateStep / 2, 1*(ddm.barrier) - stateStep/2, step=stateStep)
+    states = range(-1*(model.barrier) + stateStep / 2, 1*(model.barrier) - stateStep/2, step=stateStep)
     
     # Find the state corresponding to the bias parameter.
-    biasState = argmin(abs.(states .- ddm.bias))
+    biasState = argmin(abs.(states .- model.bias))
     
     # Initial probability for all states is zero, except the bias state,
     # for which the initial probability is one.
@@ -239,11 +239,11 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
         # likely to occur) is calculated from the model parameter d and
         # from the item values, except during non-decision time, in which
         # the mean is zero.
-        if elapsedNDT < ddm.nonDecisionTime ÷ timeStep
+        if elapsedNDT < model.nonDecisionTime ÷ timeStep
             μ = 0
             elapsedNDT += 1
         else
-            μ = ddm.d * (trial.valueLeft - trial.valueRight)
+            μ = model.d * (trial.valueLeft - trial.valueRight)
         end
         
         # Update the probability of the states that remain inside the
@@ -253,7 +253,7 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
         # multiply the probability by the stateStep to ensure that the area
         # under the curves for the probability distributions probUpCrossing
         # and probDownCrossing add up to 1.
-        @. normpdf = pdf(Normal(μ, ddm.σ), changeMatrix)
+        @. normpdf = pdf(Normal(μ, model.σ), changeMatrix)
         prStatesNew = stateStep * (normpdf * prStates[:,time])
         prStatesNew[(states .>= barrierUp[time]) .| (states .<= barrierDown[time])] .= 0
         
@@ -263,8 +263,8 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
         # probability of crossing the barrier if A is the previous state.
         cdfUp = similar(changeUp[:, time])
         cdfDown = similar(changeDown[:, time])
-        @. cdfUp = cdf(Normal(μ, ddm.σ), changeUp[:, time])
-        @. cdfDown = cdf(Normal(μ, ddm.σ), changeDown[:, time])
+        @. cdfUp = cdf(Normal(μ, model.σ), changeUp[:, time])
+        @. cdfDown = cdf(Normal(μ, model.σ), changeDown[:, time])
         
         tempUpCross = dot(prStates[:,time], 1 .- cdfUp)
         tempDownCross = dot(prStates[:,time], cdfDown)
@@ -297,4 +297,39 @@ function DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial timeStep::Number = 10
   
     
     return likelihood
+end
+
+
+"""
+    compute_likelihood(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, cutOff = 20000))
+
+Simulate data using the model for the given stimuli.
+
+# Arguments
+- `model`: aDDM object.
+- `data`: Vector of `ADDM.Trial` objects. 
+- `likelihood_fn`: Name of the function that computes the likelhoods of a trial for the given model.
+- `likelihood_args`: Named tuple containing kwargs that should be fed to `likelihood_fn`
+- `return_trial_likelihoods`: Boolean to specify whether to return the likelihoods for each trial
+
+# Returns
+- Negative log likelihood of data
+"""
+function compute_likelihood(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
+                            return_trial_likelihoods = false)
+  
+  likelihoods = [likelihood_fn(;model = model, trial = OneTrial, likelihood_args...) for OneTrial in data]
+
+  # If likelihood is 0, set it to 1e-64 to avoid taking the log of a 0.
+  likelihoods = max.(likelihoods, 1e-64)
+
+  # Sum over all of the negative log likelihoods.
+  negative_log_likelihood = -sum(log.(likelihoods))
+
+  if return_trial_likelihoods
+    return negative_log_likelihood, likelhoods
+  else
+    return negative_log_likelihood
+  end
+
 end

@@ -22,8 +22,8 @@ using StatsBase
 include("define_model.jl")
 include("fixation_data.jl")
 include("simulate_data.jl")
-# include("compute_likelihood.jl")
-# include("grid_search.jl")
+include("compute_likelihood.jl")
 include("util.jl")
+# include("grid_search.jl")
 
 end

@@ -1,37 +1,57 @@
 """
-    aDDM_grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
-                          θList::LinRange{Float64, Int64}, n::Int64; trials::Int64=1000, cutOff::Int64=30000, simData::Bool = false)
+    grid_search(data, param_grid, likelihood_fn, return_grid_likelihoods = false; 
+                likelihood_args =  (timeStep = 10.0, approxStateStep = 0.1), return_trial_likelihoods = false)
 
 Compute the likelihood of either observed or simulated data for all parameter combinations in paramGrid.
 
 # Arguments
-- `simData`: boolean specifying whether to simulated data
-- `expData`: path to observed data if not simulating
-- `fixationData`: path to either observed fixation data if not simulating or output of `get_empirical_distributions` if simulating
-- `paramGrid`: grid of parameter combinations for which likelihoods of data will be computed
-- `addm`: addm object specifying the true model of simulating data
-- `nTrials`: number of trials to simulate for each dataset if simulating data
-- `rtCutOff`: max allowed RT in ms if simulating data 
+- `data`: 
 
 # Returns:
-- MLE estimates and likelihoods for 
-      
-# Todo
-- Specify how to read data in when not simulated
-- Make parameter grid more general; not limited to only d, sigma and theta but also include bias, barrierDecay
+- ...
 
-Planned usage:
-```
-aDDM_grid_search(simData::Bool = false, expData::..., fixationData::FixationData, paramGrid::..., # this is all you need if fitting to true data
-                addm::aDDM, nTrials::Int64=1000, rtCutOff::Int64=30000) # additional args if simulating
-```
 """
+function grid_search(data, likelihood_fn, param_grid, 
+                    fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
+                    return_grid_likelihoods = false,
+                    likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
+                    return_trial_likelihoods = false)
+
+  n = length(param_grid) # number of parameter combinations specified in param_grid
+  all_nll = Vector{}(undef, n)
+
+  # Pass fixed parameters to the model
+  # These don't need to be for each combination of the parameter grid
+  model = ADDM.aDDM()
+  for (k,v) in fixed_params setproperty!(model, k, v) end
+
+  # Problem: how to define rest of the param_grid and iterate over it?
+  # What should the structure of param_grid be?
+
+  for (i, cur_grid_params) in enumerate(param_grid)
+    
+    for (k,v) in cur_grid_params setproperty!(model, k, v) end
+
+    if return_trial_likelihoods
+      all_nll[i], trial_likelihoods[i] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args = likelihood_args; 
+                              return_trial_likelihoods = return_trial_likelihoods)
+    else
+      all_nll[i] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args = likelihood_args)
+    end
+  
+  end
+
+  # return(all_nlls) 
+
+  # minIdx = argmin(all_nll)
+  # best_pars = 
+  # return best_pars
+
+end
+
 function grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
                           θList::LinRange{Float64, Int64}, n::Int64; trials::Int64=1000, cutOff::Int64=30000, simData::Bool = false)
     
-    dMLEList = Vector{Float64}(undef, n)
-    σMLEList = Vector{Float64}(undef, n)
-    θMLEList = Vector{Float64}(undef, n)
 
     NNL_List = Vector{}(undef, n)
 

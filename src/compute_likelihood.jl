@@ -301,9 +301,9 @@ end
 
 
 """
-    compute_likelihood(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, cutOff = 20000))
+    compute_trials_nll(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, cutOff = 20000))
 
-Simulate data using the model for the given stimuli.
+Compute likelihood of a dataset for a given model.
 
 # Arguments
 - `model`: aDDM object.
@@ -315,9 +315,10 @@ Simulate data using the model for the given stimuli.
 # Returns
 - Negative log likelihood of data
 """
-function compute_likelihood(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
+function compute_trials_nll(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
                             return_trial_likelihoods = false)
   
+  # Todo: Add parallelization here?
   likelihoods = [likelihood_fn(;model = model, trial = OneTrial, likelihood_args...) for OneTrial in data]
 
   # If likelihood is 0, set it to 1e-64 to avoid taking the log of a 0.
@@ -327,7 +328,7 @@ function compute_likelihood(model::aDDM, data, likelihood_fn, likelihood_args = 
   negative_log_likelihood = -sum(log.(likelihoods))
 
   if return_trial_likelihoods
-    return negative_log_likelihood, likelhoods
+    return negative_log_likelihood, likelihoods
   else
     return negative_log_likelihood
   end

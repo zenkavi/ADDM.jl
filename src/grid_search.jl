@@ -13,75 +13,72 @@ Compute the likelihood of either observed or simulated data for all parameter co
 """
 function grid_search(data, likelihood_fn, param_grid, 
                     fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-                    return_grid_likelihoods = false,
+                    return_grid_likelihoods = true,
                     likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
                     return_trial_likelihoods = false)
 
   n = length(param_grid) # number of parameter combinations specified in param_grid
   all_nll = Vector{}(undef, n)
+  trial_likelihoods = Vector{}(undef, n)
 
   # Pass fixed parameters to the model
-  # These don't need to be for each combination of the parameter grid
+  # These don't need to be updated for each combination of the parameter grid
   model = ADDM.aDDM()
+  # model = aDDM()
   for (k,v) in fixed_params setproperty!(model, k, v) end
 
-  # Problem: how to define rest of the param_grid and iterate over it?
   # What should the structure of param_grid be?
-
-  for (i, cur_grid_params) in enumerate(param_grid)
+  # Currently it is a dictionary of NamedTuples 
+  for (k, cur_grid_params) in param_grid
     
-    for (k,v) in cur_grid_params setproperty!(model, k, v) end
+    # Update the model with the current parameter combination
+    if !(cur_grid_params isa Dict)
+      for (k,v) in pairs(cur_grid_params) setproperty!(model, k, v) end
+    else
+      for (k,v) in cur_grid_params setproperty!(model, k, v) end
+    end
+    
+    # Make sure param names are converted to Greek symbols
+    # ADDM.convert_param_symbols(model)
+    convert_param_symbols(model)
 
     if return_trial_likelihoods
-      all_nll[i], trial_likelihoods[i] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args = likelihood_args; 
+      # all_nll[k], trial_likelihoods[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
+                              # return_trial_likelihoods = return_trial_likelihoods)
+      all_nll[k], trial_likelihoods[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                               return_trial_likelihoods = return_trial_likelihoods)
     else
-      all_nll[i] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args = likelihood_args)
+      # all_nll[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args)
+      all_nll[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args)
     end
   
   end
 
-  # return(all_nlls) 
+  # Wrangle likelihood data and extract best pars robustly before returning
 
-  # minIdx = argmin(all_nll)
-  # best_pars = 
-  # return best_pars
+  # Extract best pars
+  minIdx = argmin(all_nll)
+  best_fit_pars = Dict(pairs(param_grid[minIdx]))
+  best_pars = merge(best_fit_pars, fixed_params)
 
-end
+  if return_grid_likelihoods
+      # Add param info to all_nll
+      all_nll_df = DataFrame()
+      for (k, v) in param_grid
+        row = DataFrame(Dict(pairs(v)))
+        row.nll .= all_nll[k]
+        append!(all_nll_df, row)
+      end
 
-function grid_search(addm::aDDM, fixationData::FixationData, dList::LinRange{Float64, Int64}, σList::LinRange{Float64, Int64},
-                          θList::LinRange{Float64, Int64}, n::Int64; trials::Int64=1000, cutOff::Int64=30000, simData::Bool = false)
-    
+    if return_trial_likelihoods 
+        # TODo: Add param info to trial_likelihoods 
 
-    NNL_List = Vector{}(undef, n)
-
-    # Create an array of tuples for all parameter combinations.
-    param_combinations = [(d, σ, θ) for d in dList, σ in σList, θ in θList]
-    
-    @showprogress for i in 1:n
-
-        if simData
-          addmTrials = aDDM_simulate_trial_data_threads(addm, fixationData, trials, cutOff = cutOff)
-        else
-          addmTrials = ...
-        end
-
-        # Vectorized calculation of negative log-likelihood for all parameter combinations
-        neg_log_like_array = [aDDM_negative_log_likelihood_threads(addm, addmTrials, d, σ, θ) for (d, σ, θ) in param_combinations]
-        
-        # Find the index of the minimum negative log-likelihood and obtain the MLE parameters
-        minIdx = argmin(neg_log_like_array)
-        dMin, σMin, θMin = param_combinations[minIdx]
-        
-        println("obtained MLE parameters")
-        
-        # Store results in the preallocated arrays
-        dMLEList[i] = dMin
-        σMLEList[i] = σMin
-        θMLEList[i] = θMin
-
-        #NNL: NNL_List[i] = neg_log_like_array
+      return best_pars, all_nll_df, trial_likelihoods
+    else
+      return best_pars, all_nll_df
     end
+  else
+    return best_pars
+  end
 
-    return dMLEList, σMLEList, θMLEList #NNL:, NNL_List
 end

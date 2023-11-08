@@ -13,6 +13,7 @@ using Distributions
 using LinearAlgebra
 using Plots
 using Random
+using REPL
 using Statistics
 using StatsBase
 
@@ -24,6 +25,6 @@ include("fixation_data.jl")
 include("simulate_data.jl")
 include("compute_likelihood.jl")
 include("util.jl")
-# include("grid_search.jl")
+include("grid_search.jl")
 
 end

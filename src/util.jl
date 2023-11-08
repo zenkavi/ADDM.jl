@@ -86,3 +86,19 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
 
     return data
 end
+
+function convert_param_symbols(model)
+
+  sym_dict = REPL.REPLCompletions.latex_symbols
+  
+  for p in propertynames(model)
+    v = getproperty(model, p)
+    p = "\\".* String(p)
+    if p in keys(sym_dict)
+      # Add property with the latex symbol to the model too
+      setproperty!(model, Symbol(sym_dict[p]), v)
+    end
+  end
+
+  return model
+end

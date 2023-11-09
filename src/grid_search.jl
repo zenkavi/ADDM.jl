@@ -60,6 +60,7 @@ function grid_search(data, likelihood_fn, param_grid,
   minIdx = argmin(all_nll)
   best_fit_pars = Dict(pairs(param_grid[minIdx]))
   best_pars = merge(best_fit_pars, fixed_params)
+  best_pars[:nll] = all_nll[minIdx]
 
   if return_grid_likelihoods
       # Add param info to all_nll

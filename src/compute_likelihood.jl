@@ -22,15 +22,15 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
         correctedFixItem = Number[]
         correctedFixTime = Number[]
         remainingNDT = model.nonDecisionTime
-        for (fItem, fTime) in zip(trial.fixItem, trial.fixTime)
+        for (fItem, fTime) in zip(trial.fixItem, trial.fixTime) # iterate through each fixation in the trial
             if remainingNDT > 0
                 push!(correctedFixItem, 0)
-                push!(correctedFixTime, min(remainingNDT, fTime))
+                push!(correctedFixTime, min(remainingNDT, fTime)) # if the fTime is smaller push that otherwise push ndt
                 push!(correctedFixItem, fItem)
                 push!(correctedFixTime, max(fTime - remainingNDT, 0))
                 remainingNDT = remainingNDT - fTime
             else
-                push!(correctedFixTime, fItem)
+                push!(correctedFixItem, fItem)
                 push!(correctedFixTime, fTime)
             end
         end

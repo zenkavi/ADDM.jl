@@ -25,6 +25,19 @@ docker pull zenkavi/addm.jl:0.0.1
 ```
 docker run --rm -it zenkavi/addm.jl:0.0.1
 ```
+- If you prefer an image with jupyter notebooks
+
+```
+docker pull zenkavi/addm.jl.nb:0.0.1
+```
+
+- Start a notebook mounting your current local directory onto the containers work directory
+
+```
+docker run -it --rm \
+-v $(pwd):/home/jovyan/work \
+-p 8888:8888 zenkavi/addm.jl.nb:0.0.1 jupyter-lab
+```
 
 #### Github
 

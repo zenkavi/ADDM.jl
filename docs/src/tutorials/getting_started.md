@@ -101,6 +101,12 @@ param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0))
 ```
 
+Examine output
+
+```
+sort!(all_nll_df, [:nll])
+```
+
 **Option 2: Narrow in from starting points**
 
 TBD

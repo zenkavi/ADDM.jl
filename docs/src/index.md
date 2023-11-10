@@ -15,8 +15,10 @@ evidence accummulations models with time-varying drift rates.
 **If you don't want to deal with installing any dependencies**
 
 - Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Start Docker Desktop.
 - Pull Docker image
 
+From Terminal: 
 ```
 docker pull zenkavi/addm.jl:0.0.1
 ```
@@ -31,7 +33,13 @@ docker run --rm -it zenkavi/addm.jl:0.0.1
 docker pull zenkavi/addm.jl.nb:0.0.1
 ```
 
-- Start a notebook mounting your current local directory onto the containers work directory
+From Docker Desktop (not recommended):
+  - `Cmd+K` to search hub images
+  - Type `zenkav/addm` and it should list images. Select either `zenkavi/addm.jl` or `zenkavi/addm.jl.nb` depending on whether you want to run a notebook
+  - Click `Pull` to pull the image
+
+
+- Start a notebook from a terminal mounting your current local directory onto the containers work directory
 
 ```
 docker run -it --rm \

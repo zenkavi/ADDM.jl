@@ -10,17 +10,57 @@ evidence accummulations models with time-varying drift rates.
 
 ### Currently
 
-**Github**
+#### Docker
 
-- Fork Github repo
-- Clone Github repo
+**If you don't want to deal with installing any dependencies**
 
-**Docker**
+- Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Pull Docker image
 
-- Install Docker Desktop
-- `docker pull ...`
+```
+docker pull zenkavi/addm.jl:0.0.1
+```
+- Run a container using this image. This will start in a Julia kernel with all environment dependencies installed.
 
-### Soon
+```
+docker run --rm -it zenkavi/addm.jl:0.0.1
+```
+
+#### Github
+
+**If you have Julia and Git installed and want a local copy of the toolbox on your machine. This will require you to install all Julia dependencies**
+
+- Clone the Github repo
+
+```
+git clone https://github.com/aDDM-Toolbox/ADDM.jl.git
+```
+
+or
+
+```
+git clone git@github.com:aDDM-Toolbox/ADDM.jl.git
+```
+
+- Navigate to the ADDM.jl directory
+
+```
+cd ADDM.jl
+```
+
+- Set up the Julia environment (might take a few minutes)
+
+```
+julia --project -e 'import Pkg; Pkg.instantiate()'
+```
+
+- Start up a Julia kernel using the project's environment
+
+```
+julia --project
+```
+
+### Once `ADDM.jl` is on the Julia Registry
 
 To install `ADDM.jl` from the Julia Registry
 
@@ -40,21 +80,11 @@ There are a few ways to get started with ADDM.jl:
 
  * Become familiar with the modeling framework described in [Krajbich et al. (2010)](https://www.nature.com/articles/nn.2635)  
  * Become familiar with algorithm used for parameter estimation [Tavares et al. (2017)](https://www.frontiersin.org/articles/10.3389/fnins.2017.00468/full)  
- * Read the introductory tutorial ...
+ * Read the [introductory tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/getting_started/)
 
 ## Getting help
 
 If you need help, please [open a GitHub issue](https://github.com/aDDM-Toolbox/ADDM.jl/issues/new).
-
-## How the documentation is structured
-
-* **Tutorials** contains step-by-step explanations of how to use ADDM.jl. Once
-  you've got `ADDM.jl` installed, start by reading ...
-
-* **Examples** contain worked examples of various problems solved using ADDM.jl.
-
-* The **API Reference** contains a complete list of the functions you can use in
-  ADDM.jl. Look here if you want to know how to use a particular function.
 
 ## Citing `ADDM.jl`
 

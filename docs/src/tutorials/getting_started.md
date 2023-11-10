@@ -94,7 +94,7 @@ SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 **Option 1: Grid Search**
 
 ```julia
-ffn = "./data/addm_grid.csv"
+fn = "./data/addm_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 

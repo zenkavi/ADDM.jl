@@ -19,5 +19,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/zenkavi/ADDM.jl.git",
+    repo = "github.com/aDDM-Toolbox/ADDM.jl.git",
 )

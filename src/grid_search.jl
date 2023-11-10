@@ -39,16 +39,12 @@ function grid_search(data, likelihood_fn, param_grid,
     end
     
     # Make sure param names are converted to Greek symbols
-    # ADDM.convert_param_symbols(model)
     convert_param_symbols(model)
 
     if return_trial_likelihoods
-      # all_nll[k], trial_likelihoods[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
-                              # return_trial_likelihoods = return_trial_likelihoods)
       all_nll[k], trial_likelihoods[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                               return_trial_likelihoods = return_trial_likelihoods)
     else
-      # all_nll[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args)
       all_nll[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args)
     end
   
@@ -57,6 +53,7 @@ function grid_search(data, likelihood_fn, param_grid,
   # Wrangle likelihood data and extract best pars robustly before returning
 
   # Extract best pars
+  # TODo: Convert param names to greek letters?
   minIdx = argmin(all_nll)
   best_fit_pars = Dict(pairs(param_grid[minIdx]))
   best_pars = merge(best_fit_pars, fixed_params)
@@ -73,7 +70,6 @@ function grid_search(data, likelihood_fn, param_grid,
 
     if return_trial_likelihoods 
         # TODo: Add param info to trial_likelihoods 
-
       return best_pars, all_nll_df, trial_likelihoods
     else
       return best_pars, all_nll_df

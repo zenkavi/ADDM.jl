@@ -279,7 +279,7 @@ function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
 end
 
 """
-    simulate_trial(model::aDDM, stimuli, simulator_fn, simulator_args = (timeStep = 10.0, cutOff = 20000))
+    simulate_data(model::aDDM, stimuli, simulator_fn, simulator_args = (timeStep = 10.0, cutOff = 20000))
 
 Simulate data using the model for the given stimuli.
 

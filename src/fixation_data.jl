@@ -204,7 +204,6 @@ model simulations.
   duration distributions were calculated. Will be the durations sampled in 
   `addm_simulate_trial` if using `fixationDist` instead of `fixationData`
 """
-
 function convert_to_fixationDist(fixationData::FixationData; timeStep::Number = 10)
 
     if fixationData.fixDistType != "fixation"

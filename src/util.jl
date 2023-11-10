@@ -87,6 +87,11 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
     return data
 end
 
+"""
+    convert_param_symbols(model)
+
+Convert parameter names that are specified in text into greek/latex symbols. Used by `ADDM.grid_search`
+"""
 function convert_param_symbols(model)
 
   sym_dict = REPL.REPLCompletions.latex_symbols

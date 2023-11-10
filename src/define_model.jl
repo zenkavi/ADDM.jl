@@ -44,13 +44,6 @@ julia> t.uninterruptedLastFixTime = 189
 julia> t
 Trial(1, 2145, 1, 3, #undef, #undef, #undef, 189, #undef)
 ```
-
-# Todo
-## Tests
-- Create a tmp Trial struct with only mandatory arguments
-- Check it has the correct number elements
-- Assign optional argument to the Trial struct
-- Check that is assigned to the correct slot
 """
 mutable struct Trial
     

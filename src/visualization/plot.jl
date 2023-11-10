@@ -1,37 +1,3 @@
-"""
-#!/usr/bin/env julia
-Copyright (C) 2023, California Institute of Technology
-
-This file is part of addm_toolbox.
-
-addm_toolbox is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-addm_toolbox is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
-
----
-
-Module: plot.jl
-Author: Lynn Yang, lynnyang@caltech.edu
-
-Visualization functions for the aDDM Toolbox.
-"""
-using Pkg
-Pkg.activate("addm")
-
-using Plots
-using Printf
-
-include("ddm.jl")
-include("addm.jl")
 
 
 function plot_value_diff_distributions(n::Int64, d::Float64, σ::Float64, leftRates::Array{Float64, 1},
@@ -114,13 +80,13 @@ function plot_σ_diff_timeseries(d::Float64, σList::Array{Float64, 1}, leftRate
     end
 end
 
-n = 10000
-leftRates = [0.0, 2.0, 4.0]
-rightRates = [0.0, 1.0, 3.0]
-leftRate = 0.0
-rightRate = 0.0
-σList = [0.001, 0.01, 0.025, 0.1]
+# n = 10000
+# leftRates = [0.0, 2.0, 4.0]
+# rightRates = [0.0, 1.0, 3.0]
+# leftRate = 0.0
+# rightRate = 0.0
+# σList = [0.001, 0.01, 0.025, 0.1]
 
-plot_value_diff_distributions(n, 0.0002, 0.01, leftRates, rightRates, "images")
-plot_value_diff_rdv_timeseries(0.0002, 0.01, leftRates, rightRates, "images")
-plot_σ_diff_timeseries(0.0002, σList, leftRate, rightRate, "images")
+# plot_value_diff_distributions(n, 0.0002, 0.01, leftRates, rightRates, "images")
+# plot_value_diff_rdv_timeseries(0.0002, 0.01, leftRates, rightRates, "images")
+# plot_σ_diff_timeseries(0.0002, σList, leftRate, rightRate, "images")

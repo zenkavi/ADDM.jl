@@ -1,53 +1,15 @@
 """
-#!/usr/bin/env julia
-Copyright (C) 2023, California Institute of Technology
+    DDMTrial(RDV, RT, choice, valueLeft, valueRight)
 
-This file is part of addm_toolbox.
-
-addm_toolbox is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-addm_toolbox is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with addm_toolbox. If not, see <http://www.gnu.org/licenses/>.
-
----
-
-Module: ddm.jl
-Author: Lynn Yang, lynnyang@caltech.edu
-
-Implementation of the classic drift-diffusion model (DDM), as described by
-Ratcliff et al. (1998).
-
-Based on Python addm_toolbox from Gabriela Tavares, gtavares@caltech.edu.
+# Arguments
+- `RDV`: vector of RDV over time.
+- `RT`: response time in milliseconds.
+- `choice`: either -1 (for left item) or +1 (for right item).
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
 """
-
-using Pkg
-Pkg.activate("addm")
-
-using Random
-using Distributions
-using CSV
-using DataFrames
-using Statistics
-using LinearAlgebra
-
-
 struct DDMTrial
-    """
-    Args:
-      RDV: vector of RDV over time.
-      RT: response time in milliseconds.
-      choice: either -1 (for left item) or +1 (for right item).
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-    """
+    
     RDV::Vector{Number}
     RT::Number
     choice::Number
@@ -59,61 +21,68 @@ struct DDMTrial
     end
 end
 
+"""
+Implementation of a simplified version of the traditional drift-diffusion model (DDM), 
+as described by Ratcliff et al. (1998).
 
+# Arguments
+- `d`: Number, parameter of the model which controls the speed of
+    integration of the signal.
+- `σ`: Number, parameter of the model, standard deviation for the
+    normal distribution.
+- `barrier`: positive Int64, boundary separation in each direction from 0. Default at 1.
+- `decay`: constant for linear barrier decay at each time step. Default at 0.
+- `nonDecisionTime`: non-negative Number, the amount of time in
+    milliseconds during which processes other than evidence accummulation occurs. 
+    Default at 0.
+- `bias`: Number, corresponds to the initial value of the relative decision value
+    variable. Must be smaller than barrier.
+- `params`: Tuple, parameters of the model. Order of parameters: d, σ, barrier, decay, 
+    nonDecisionTime, bias
+"""
 Base.@kwdef mutable struct DDM
-    """
-    Implementation of the traditional drift-diffusion model (DDM), as described
-    by Ratcliff et al. (1998).
-
-    Args:
-      d: Number, parameter of the model which controls the speed of
-          integration of the signal.
-      σ: Number, parameter of the model, standard deviation for the
-          normal distribution.
-      barrier: positive Int64, magnitude of the signal thresholds.
-      nonDecisionTime: non-negative Number, the amount of time in
-          milliseconds during which only noise is added to the nonDecisionTime
-          variable.
-      bias: Number, corresponds to the initial value of the nonDecisionTime
-          variable. Must be smaller than barrier.
-      params: Tuple, parameters of the model.
-    """
+    
     d::Number
     σ::Number
     barrier::Number
+    decay::Number #Todo: Change barrier decay to be a function so it can different forms with the default of linear and no decay
     nonDecisionTime::Number
     bias::Number
-    params::Tuple{Number, Number} = (d, σ)
+    params::Tuple{Number, Number, Number, Number, Number, Number}
 
-    function DDM(d, σ; barrier=1, nonDecisionTime=0, bias=0.0)
+    function DDM(d, σ; barrier = 1, decay = 0, nonDecisionTime = 0, bias = 0.0)
         if barrier <= 0
             throw(ValueError("Error: barrier parameter must larger than zero."))
         elseif bias >= barrier
             throw(ValueError("Error: bias parameter must be smaller than barrier parameter."))
         end
-        new(d, σ, barrier, nonDecisionTime, bias, (d, σ))
+        params = (d, σ, barrier, decay, nonDecisionTime, bias)
+        new(d, σ, barrier, decay, nonDecisionTime, bias, params)
     end
 end
 
+"""
+    DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, 
+                             approxStateStep::Number = 0.1, 
+                             decay::Number = 0)
 
+Compute the likelihood of the data from a single DDM trial for these
+particular DDM parameters.
+
+# Arguments
+- `ddm`: DDM object.
+- `trial`: DDMTrial object.
+- `timeStep`: Number, value in milliseconds to be used for binning the
+    time axis.
+- `approxStateStep`: Number, to be used for binning the RDV axis.
+- `decay`: float, corresponds to how barriers change over time
+# Returns
+- The likelihood obtained for the given trial and model.
+"""
 function DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 10, 
-                                  approxStateStep::Number = 0.1, plotTrial::Bool = false,
+                                  approxStateStep::Number = 0.1,
                                   decay::Number = 0)
-    """
-    Computes the likelihood of the data from a single DDM trial for these
-    particular DDM parameters.
-    Args:
-        ddm: DDM object.
-        trial: DDMTrial object.
-        timeStep: Number, value in milliseconds to be used for binning the
-            time axis.
-        approxStateStep: Number, to be used for binning the RDV axis.
-        plotTrial: Bool, flag that determines whether the algorithm
-            evolution for the trial should be plotted.
-        decay: float, corresponds to how barriers change over time
-    Returns:
-        The likelihood obtained for the given trial and model.
-    """
+    
     # Get the number of time steps for this trial.
     numTimeSteps = Int64(trial.RT ÷ timeStep)
     if numTimeSteps < 1
@@ -213,30 +182,32 @@ function DDM_get_trial_likelihood(ddm::DDM, trial::DDMTrial; timeStep::Number = 
             likelihood = probDownCrossing[end]
         end
     end
-    
-    if plotTrial
-        # TODO
-    end
+  
     
     return likelihood
 end
 
+"""
+    DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number; timeStep::Number = 10.0, 
+                       cutOff::Int64 = 20000)
 
+Generate a DDM trial given the item values.
+
+# Arguments
+- `ddm`: DDM object.
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+- `timeStep`: Number, value in milliseconds to be used for binning the
+    time axis.
+- `cutOff`: Number, value in milliseconds to be used as a cap if trial
+    response time is too long.
+
+    # Returns
+- A DDMTrial object resulting from the simulation.
+"""
 function DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number;
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
-    """
-    Generates a DDM trial given the item values.
-    Args:
-      ddm: DDM object.
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-      timeStep: Number, value in milliseconds to be used for binning the
-          time axis.
-      cutOff: Number, value in milliseconds to be used as a cap if trial
-          response time is too long.
-    Returns:
-      A DDMTrial object resulting from the simulation.
-    """
+    
     RDV = ddm.bias
     elapsedNDT = 0
     tRDV = Vector{Number}(undef, cutOff)
@@ -272,36 +243,42 @@ function DDM_simulate_trial(ddm::DDM, valueLeft::Number, valueRight::Number;
     return DDMTrial(tRDV, cutOff * timeStep, choice, valueLeft, valueRight)
 end
 
+"""
+    DDM_simulate_trial_data(ddm::DDM, n::Int64; cutOff::Int64 = 20000)
 
+Generate a vector of DDMTrial simulations.
+
+# Arguments
+- `ddm`: DDM object.
+- `n`: Number of trials to be simulated.
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
+
+# Returns
+- `ddmTrials`: Vector of DDMTrials.
+"""
 function DDM_simulate_trial_data(ddm::DDM, n::Int64; cutOff::Int64 = 20000)
-    """
-    Generates a vector of DDMTrial simulations.
-    Args:
-      ddm: DDM object.
-      n: Number of trials to be simulated.
-      valueLeft: value of the left item.
-      valueRight: value of the right item.
-    Returns:
-      ddmTrials: Vector of DDMTrials.
-    """
+    
     ddmTrials = [DDM_simulate_trial(ddm, rand(0:5), rand(0:5), cutOff=cutOff) for _ in 1:n]
     return ddmTrials
 end
 
+"""
+    DDM_negative_log_likelihood(ddmTrials::Vector{DDMTrial}, d::Number, σ::Number)
 
+Calculate the negative log likelihood from a given dataset of DDMTrials and parameters
+of a model.
+
+# Arguments
+`ddmTrials`: Vector of DDMTrials.
+`d`: Number, parameter of the model which controls the speed of integration of the signal. 
+`σ`: Number, parameter of the model, standard deviation for the normal distribution.
+
+# Returns 
+- The negative log likelihood for the given vector of DDMTrials and model.
+"""
 function DDM_negative_log_likelihood(ddmTrials::Vector{DDMTrial}, d::Number, σ::Number)
-    """
-    Calculates the negative log likelihood from a given dataset of DDMTrials and parameters
-    of a model.
-    Args:
-      ddmTrials: Vector of DDMTrials.
-      d: Number, parameter of the model which controls the speed of integration of
-          the signal. 
-      σ: Number, parameter of the model, standard deviation for the normal
-          distribution.
-    Returns: 
-      The negative log likelihood for the given vector of DDMTrials and model.
-    """
+    
     # Calculate the likelihood of each trial.
     ddm = DDM(d, σ)
     likelihoods = [DDM_get_trial_likelihood(ddm, ddmTrial) for ddmTrial in ddmTrials]
@@ -315,19 +292,23 @@ function DDM_negative_log_likelihood(ddmTrials::Vector{DDMTrial}, d::Number, σ:
     return negative_log_likelihood
 end
 
+"""
+    DDM_simulate_trial_data_csv(ddm::DDM, n::Int64; path::String="", 
+                                fileName::String="ddm_data.csv", cutOff::Int64=20000)
 
+Save a CSV file of simulated DDMTrials.
+
+# Arguments
+- `n`: Number of trials
+- `d`: Number, parameter of model which controls the speed of integration
+    of the signal.
+- `σ`: Number, parameter of the model, standard deviation for the normal
+    distribution.
+- `path`: String, path to save CSV file.
+"""
 function DDM_simulate_trial_data_csv(ddm::DDM, n::Int64; path::String="", 
                              fileName::String="ddm_data.csv", cutOff::Int64=20000)
-    """
-    Saves a CSV file of simulated DDMTrials.
-    Args:
-      n: Number of trials
-      d: Number, parameter of model which controls the speed of integration
-          of the signal.
-      σ: Number, parameter of the model, standard deviation for the normal
-          distribution.
-      path: String, path to save CSV file.
-    """
+    
     # Generate a list of simulated DDMTrials.
     trials = []
     for i in 1:n
@@ -348,20 +329,24 @@ function DDM_simulate_trial_data_csv(ddm::DDM, n::Int64; path::String="",
     CSV.write(filePath, df)
 end
 
+"""
+    DDM_negative_log_likelihood_csv(dataFileName::String, d::Number, σ::Number)
 
+Calculate the negative log likelihood from a CSV file which contains a dataset of 
+DDMTrials and parameters of a model.
+
+# Arguments
+`dataFileName`: CSV file of simulated DDMTrials.
+`d`: Number, parameter of the model which controls the speed of integration of
+    the signal. 
+`σ`: Number, parameter of the model, standard deviation for the normal
+    distribution.
+
+# Returns 
+- The negative log likelihood for the dataset of DDMTrials and model.
+"""
 function DDM_negative_log_likelihood_csv(dataFileName::String, d::Number, σ::Number)
-    """
-    Calculates the negative log likelihood from a CSV file which contains a dataset of 
-    DDMTrials and parameters of a model.
-    Args:
-      dataFileName: CSV file of simulated DDMTrials.
-      d: Number, parameter of the model which controls the speed of integration of
-          the signal. 
-      σ: Number, parameter of the model, standard deviation for the normal
-          distribution.
-    Returns: 
-      The negative log likelihood for the dataset of DDMTrials and model.
-    """
+    
     # Load data from CSV file.
     try 
         df = DataFrame(CSV.File(dataFileName, delim=","))

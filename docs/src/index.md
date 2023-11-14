@@ -12,34 +12,23 @@ evidence accummulations models with time-varying drift rates.
 
 #### Docker
 
-**If you don't want to deal with installing any dependencies**
+This option is for those who don't want to deal with installing any dependencie. See below for [instructions on how to install via Github](#Github)
 
 - Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Start Docker Desktop.
-- Pull Docker image
+- Pull Docker image (with Jupyter notebooks. See below for a smaller image without notebooks.)
 
-From Terminal: 
-```
-docker pull zenkavi/addm.jl:0.0.1
-```
-- Run a container using this image. This will start in a Julia kernel with all environment dependencies installed.
-
-```
-docker run --rm -it zenkavi/addm.jl:0.0.1
-```
-- If you prefer an image with jupyter notebooks
+- From Terminal (on Mac, or whatever other command line interface you have for your sistem): 
 
 ```
 docker pull zenkavi/addm.jl.nb:0.0.1
 ```
 
-From Docker Desktop (not recommended):
-  - `Cmd+K` to search hub images
-  - Type `zenkav/addm` and it should list images. Select either `zenkavi/addm.jl` or `zenkavi/addm.jl.nb` depending on whether you want to run a notebook
-  - Click `Pull` to pull the image
-
-
-- Start a notebook from a terminal mounting your current local directory onto the containers work directory
+- Start a notebook from a terminal. In case you're not familiar with docker the command below has the following structure:
+  - `docker run -it --rm`: this is the main command to start a container from an image. The two flags are `-it` to interact with the container interactively and `--rm` so docker cleans up after we're done with the container
+  - `-v $(pwd):/home/jovyan/work`: this mounts your local directory, wherever you're running this command from as captured by `$(pwd)` on to the file system in the docker image at path `/home/jovyan/work`. You can change either side of `:` to mount another directory from your system or to another path in the container. This part is critical if you want to be able to write out and save any output from your analyses that run in the container. Otherwise they will disappear when you kill the container (because we are starting the container with the `--rm` flag).
+  - `-p 8888:8888`: this connects a local port to the jupyter-lab port in the container. If you have any other jupyter-lab notebooks running locally that are listening on the `8888` port you should change this to e.g. `-p 8989:8888` so it does not ask you for a token when you go to the URL this command lists in its output.
+  - `zenkavi/addm.jl.nb:0.0.1 jupyter-lab`: this specifies the container name with the tag and the entry point (the beginning command) you want to run in the container. The output will look similar to when you start a jupyter notebook locally. Go to the URL listed in the output in a browser to start a notebook and begin exploring the toolbox as described in [Getting started with ADDM.jl](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/getting_started/)
 
 ```
 docker run -it --rm \
@@ -47,20 +36,28 @@ docker run -it --rm \
 -p 8888:8888 zenkavi/addm.jl.nb:0.0.1 jupyter-lab
 ```
 
+- To kill the container hit `cmd + c`
+
+- If you don't need notebooks to explore the toolbox properties you can pull a smaller image with the precompiled toolbox.
+
+```
+docker pull zenkavi/addm.jl:0.0.1
+```
+
+- If you do not want to use a command line interface you can pull the images using Docker Desktop (not recommended):
+  - `Cmd+K` to search hub images
+  - Type `zenkav/addm` and it should list images. Select either `zenkavi/addm.jl` or `zenkavi/addm.jl.nb` depending on whether you want to run a notebook
+  - Click `Pull` to pull the image
+
+
 #### Github
 
-**If you have Julia and Git installed and want a local copy of the toolbox on your machine. This will require you to install all Julia dependencies**
+If you have Julia and Git installed and want a local copy of the toolbox on your machine you can follow the intructions below Note that, this will require you to install all Julia dependencies.
 
 - Clone the Github repo
 
 ```
 git clone https://github.com/aDDM-Toolbox/ADDM.jl.git
-```
-
-or
-
-```
-git clone git@github.com:aDDM-Toolbox/ADDM.jl.git
 ```
 
 - Navigate to the ADDM.jl directory

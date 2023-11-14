@@ -21,7 +21,9 @@ This should be of type `NamedTuple` with required field names (case sensitive): 
 
 **Option 1: Read in from CSV**  
 
-Note that the `CSV` and `DataFrames` modules must be loaded beforehand. These are dependencies for the ADDM module *but* the precompiled module gives access to these dependencies only in the scope of ADDM. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but the code below would not without importing these modules to the current interactive scope
+!!! note
+
+  Note that the `CSV` and `DataFrames` modules must be loaded beforehand. These are dependencies for the ADDM module *but* the precompiled module gives access to these dependencies only in the scope of ADDM. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but the code below would not without importing these modules to the current interactive scope.
 
 ```julia
 using CSV
@@ -34,7 +36,9 @@ MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 
 **Option 2: Create random stimuli**
 
-Note that if you're going to create random stimuli you should make sure to have value differences that correspond to what you plan to fit in for fixation data
+!!! note
+
+  If you're going to create random stimuli you should make sure to have value differences that correspond to what you plan to fit in for fixation data
 
 ```julia
 Random.seed!(38535)
@@ -43,7 +47,7 @@ MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 ### Define fixationData
 
-Fixation information that will be fed in to the model for simulations should be of type `FixationData`. This type organizes empirical fixations to distributions conditional on fixation type (first, second etc.) and value difference.
+Fixation information that will be fed in to the model for simulations should be of type [`FixationData`](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#Fixation-data). This type organizes empirical fixations to distributions conditional on fixation type (first, second etc.) and value difference.
 
 This organizes both the behavioral and the fixation data as a dictionary of Trial objects indexed by subject
 
@@ -77,7 +81,7 @@ Note that these are *positional* arguments for code efficiency
 SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 ```
 
-Data can also be simulated from probability distributions of fixation data.
+Data can also be simulated from [probability distributions of fixation data](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#ADDM.convert_to_fixationDist).
 
 ```julia
 MyFixationDist, MyTimeBins = ADDM.convert_to_fixationDist(MyFixationData)
@@ -89,9 +93,7 @@ MyArgs = (fixationData = MyBlankFixationData, fixationDist = MyFixationDist, tim
 SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 ```
 
-### Recover parameters 
-
-**Option 1: Grid Search**
+### Recover parameters using a grid search
 
 ```julia
 fn = "./data/addm_grid.csv"
@@ -101,26 +103,18 @@ param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0))
 ```
 
-Examine output
+Examine the sum of negative log likelihoods for each parameter combination.
 
 ```
 sort!(all_nll_df, [:nll])
 ```
 
-**Option 2: Narrow in from starting points**
+Save data frame containing the negative log likelihood info for all parameter combinations you searched for. 
 
-TBD
+!!!note
+Make sure that you have mounted a local directory to your container if you're working through this tutorial in a docker container. The output path below is the one specified in the installation instructions. You should change it if you want to save your output elsewhere.
 
-## Parameter recovery on empirical data
-
-TBD
-
-## Visualizations
-
-### Marginal posteriors
-
-TBD
-
-### True vs. simulated data
-
-TBD
+```
+output_path = '/home/jovyan/work/all_nll_df.csv'
+CSV.write(output_path, all_nll_df)
+```

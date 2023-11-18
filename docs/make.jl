@@ -8,7 +8,7 @@ makedocs(
     sitename = "ADDM.jl",
     clean = true,
     format = Documenter.HTML(
-        collapselevel = 1
+        collapselevel = 2
     ),
     pages = [
         "Home" => "index.md",

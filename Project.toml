@@ -23,6 +23,7 @@ Unidecode = "967fb449-e509-55aa-8007-234b4096b967"
 
 [compat]
 ProgressMeter = "1"
+Distributions = "0.25"
 julia = "1"
 
 [extras]

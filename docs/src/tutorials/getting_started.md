@@ -22,7 +22,8 @@ This should be of type `NamedTuple` with required field names (case sensitive): 
 **Option 1: Read in from CSV**  
 
 !!! note
-    Note that the `CSV` and `DataFrames` modules must be loaded beforehand. These are dependencies for the ADDM module *but* the precompiled module gives access to these dependencies only in the scope of ADDM. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but the code below would not without importing these modules to the current interactive scope.
+
+    Note that the `CSV` and `DataFrames` modules must be loaded beforehand. These are dependencies for the ADDM module *but* the precompiled module gives access to these dependencies only in the scope of ADDM. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but the code below would not without importing these modules to the current interactive scope.    
 
 ```julia
 using CSV
@@ -36,7 +37,8 @@ MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 **Option 2: Create random stimuli**
 
 !!! note
-    If you're going to create random stimuli you should make sure to have value differences that correspond to what you plan to fit in for fixation data
+
+    If you're going to create random stimuli you should make sure to have value differences that correspond to what you plan to fit in for fixation data.
 
 ```julia
 Random.seed!(38535)
@@ -112,6 +114,7 @@ sort!(all_nll_df, [:nll])
 Save data frame containing the negative log likelihood info for all parameter combinations you searched for. 
 
 !!! note
+
     Make sure that you have mounted a local directory to your container if you're working through this tutorial in a docker container. The output path below is the one specified in the installation instructions. You should change it if you want to save your output elsewhere.
 
 ```

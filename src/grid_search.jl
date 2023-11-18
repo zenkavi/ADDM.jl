@@ -1,14 +1,37 @@
 """
-    grid_search(data, param_grid, likelihood_fn, return_grid_likelihoods = false; 
+    grid_search(data, likelihood_fn, param_grid, return_grid_likelihoods = false; 
                 likelihood_args =  (timeStep = 10.0, approxStateStep = 0.1), return_trial_likelihoods = false)
 
 Compute the likelihood of either observed or simulated data for all parameter combinations in paramGrid.
 
 # Arguments
-- `data`: 
 
-# Returns:
-- ...
+## Required 
+
+- `data`: Data for which the sum of negative log likelihoods will be computed for each trial.
+  Should be a vector of `ADDM.Trial` objects.
+- `likelihood_fn`: Name of likelihood function to be used to compute likelihoods. 
+  The toolbox has `ADDM.aDDM_get_trial_likelihood` and `ADDM.aDDM_get_trial_likelihood` defined.
+- `param_grid`: Grid of parameter combinations for which the sum of nll's for the `data` is 
+  computed.
+- `fixed_params`: Default `Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0)`.
+  Parameters required by the `likelihood_fn` that are not specified to vary across likelihood 
+  computations.
+
+## Optional 
+
+- `return_grid_likelihoods`: Default `true`. If true, will return the sum of nll's for 
+  each parameter combination
+  in the grid search.
+- `likelihood_args`: Default `(timeStep = 10.0, approxStateStep = 0.1)`. Additional 
+  arguments to be passed onto `likelihood_fn`. 
+- `return_trial_likelihoods`: Default `false`. If true, will return the likelihood of each 
+  trial in `data` for each parameter combination in `param_grid`.
+
+# Returns
+- `best_part`: `Dict` containing the parameter combination with the lowest nll.
+- `all_nll_df`: `DataFrame` containing sum of nll's for each parameter combination.
+- `trial_likelihoods`: Likelihood for each trial for each parameter combination.
 
 """
 function grid_search(data, likelihood_fn, param_grid, 

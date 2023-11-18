@@ -9,7 +9,6 @@
 - `valueRight`: value of the right item.
 
 ## Optional 
-- `RDV`: vector of RDV over time.
 - `fixItem`: list of items fixated during the trial in chronological
     order; 1 correponds to left, 2 corresponds to right, and any
     other value is considered a transition/blank fixation.
@@ -20,6 +19,7 @@
 - `uninterruptedLastFixTime`: Int64 corresponding to the duration, in
     milliseconds, that the last fixation in the trial would have if it
     had not been interrupted when a decision was made.
+- `RDV`: vector of RDV over time.
 
 # Example
 

@@ -1,4 +1,4 @@
-name: BaseDockerImage
+name: NbDockerImage
 
 on:
   push:
@@ -23,11 +23,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push nb nb
+      - name: Build and push nb image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/nbDockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: rnlcaltech/addm-toolbox:addm.jl.nb

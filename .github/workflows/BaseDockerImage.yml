@@ -8,6 +8,7 @@ on:
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox
   IMG_TAG: addm.jl
+  IMG_DOCKERFILE: ./docker/Dockerfile
 
 jobs:
   build:

@@ -2,11 +2,9 @@ name: NbDockerImage
 
 on:
   push:
-    branches:
-      - main
-    tags: '*'
-  pull_request:
-    types: [closed]
+    paths:
+      - docker/nbDockerfile
+
 
 jobs:
   docker:

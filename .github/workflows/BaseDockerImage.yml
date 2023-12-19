@@ -2,8 +2,8 @@ name: BaseDockerImage
 
 on:
   push:
-    branches:
-      - "main"
+    paths:
+      - docker/Dockerfile
 
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox

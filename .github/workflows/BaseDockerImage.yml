@@ -3,12 +3,12 @@ name: BaseDockerImage
 on:
   push:
     paths:
-      - docker/Dockerfile
+      - 'Dockerfile'
 
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox
   IMG_TAG: addm.jl
-  IMG_DOCKERFILE: ./docker/Dockerfile
+  IMG_DOCKERFILE: ./Dockerfile
 
 jobs:
   build:

@@ -1,8 +1,6 @@
 # Introduction
 
-[![Documentation](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/documentation.yml/badge.svg)](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/documentation.yml)
-
-[![CI](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/CI.yml)
+[![Documentation](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/documentation.yml/badge.svg)](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/documentation.yml)  [![CI](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/aDDM-Toolbox/ADDM.jl/actions/workflows/CI.yml)
 
 Welcome to [ADDM.jl](https://github.com/aDDM-Toolbox/ADDM.jl), a package for 
 joint modeling of response times, eyetracking data and choice behavior using

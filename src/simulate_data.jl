@@ -53,16 +53,23 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
     tRDV = Number[RDV]
     RT = 0
     uninterruptedLastFixTime = 0
+
+    # The values of the barriers can change over time.
+    barrierUp = model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
+    barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
     
     # Sample and iterate over the latency for this trial.
     latency = rand(fixationData.latencies)
     remainingNDT = model.nonDecisionTime - latency
+
+    # This will not change anything (i.e. move the RDV) if there is no latency data in the fixations
     for t in 1:Int64(latency ÷ timeStep)
         # Sample the change in RDV from the distribution.
         RDV += rand(Normal(0, model.σ))
         push!(tRDV, RDV)
 
         # If the RDV hit one of the barriers, the trial is over.
+        # No barrier decay before decision-related accummulation
         if abs(RDV) >= model.barrier
             choice = RDV >= 0 ? -1 : 1
             push!(fixRDV, RDV)
@@ -92,6 +99,8 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
     currFixLocation = 0
     decisionReached = false
 
+    # Begin decision related accummulation
+    cumTimeStep = 0
     while true
         if currFixLocation == 0
             # This is an item fixation; sample its location.
@@ -131,7 +140,9 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
             currFixTime = rand(fixationData.transitions)
         end
 
-        # Iterate over the remaining non-decision time
+        # Iterate over the remaining non-decision time remaining after the latency
+        # This can span more than first fixation depending on the first fixation duration
+        # That's why it's not conditioned over the fixation number
         if remainingNDT > 0
             for t in 1:Int64(remainingNDT ÷ timeStep)
                 # Sample the change in RDV from the distribution.
@@ -139,6 +150,7 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
                 push!(tRDV, RDV)
 
                 # If the RDV hit one of the barriers, the trial is over.
+                # No barrier decay before decision-related accummulation
                 if abs(RDV) >= model.barrier
                     choice = RDV >= 0 ? -1 : 1
                     push!(fixRDV, RDV)
@@ -153,6 +165,8 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
             end
         end
 
+        # Break out of the while loop if decision reached during NDT
+        # The break above only breaks from the NDT for loop
         if decisionReached
             break
         end
@@ -161,6 +175,7 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
         remainingNDT -= currFixTime
 
         # Iterate over the duration of the current fixation.
+        # Does not move RDV if there is no fixation time left due to NDT
         for t in 1:Int64(remainingFixTime ÷ timeStep)
             # We use a distribution to model changes in RDV
             # stochastically. The mean of the distribution (the change
@@ -178,8 +193,14 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
             RDV += rand(Normal(μ, model.σ))
             push!(tRDV, RDV)
 
+            # Increment cumulative timestep to look up the correct barrier value in case there has been a decay
+            # Decay in this case only happens during decision-related accummulation (not before)
+            # Don't want to use t here because this is reset for each fixation throughout a trial but the barrier is not
+            cumTimeStep += 1
+
             # If the RDV hit one of the barriers, the trial is over.
-            if abs(RDV) >= model.barrier
+            # Decision related accummulation here so barrier might have decayed
+            if abs(RDV) >= barrierUp[cumTimeStep]
                 choice = RDV >= 0 ? -1 : 1
                 push!(fixRDV, RDV)
                 push!(fixItem, currFixLocation)
@@ -192,6 +213,8 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
             end
         end
 
+        # Break out of the while loop if decision reached during NDT
+        # The break above only breaks from the curFixTime for loop
         if decisionReached
             break
         end
@@ -231,19 +254,26 @@ Generate a DDM trial given the item values.
     # Returns
 - A Trial object resulting from the simulation.
 """
+
 function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
     
     RDV = model.bias
     elapsedNDT = 0
+    ndtTimeSteps = round(model.nonDecisionTime ÷ timeStep)
     tRDV = Vector{Number}(undef, cutOff)
     valueDiff = model.d * (valueLeft - valueRight)
+
+    # The values of the barriers can change over time.
+    barrierUp = model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
+    barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
 
     for time in 0:cutOff-1
         tRDV[time + 1] = RDV
 
         # If the RDV hit one of the barriers, the trial is over.
-        if abs(RDV) >= model.barrier
+        # Barrier decays only for decision related timesteps
+        if abs(RDV) >= barrierUp[time - ndtTimeSteps]
             choice = RDV >= 0 ? -1 : 1
             RT =  time * timeStep
             trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
@@ -261,7 +291,7 @@ function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
         end
 
         # Sample the change in RDV from the distribution.
-        if elapsedNDT < (model.nonDecisionTime ÷ timeStep)
+        if elapsedNDT < ndtTimeSteps
             μ = 0
             elapsedNDT += 1
         else

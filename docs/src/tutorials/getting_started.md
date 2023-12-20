@@ -121,3 +121,15 @@ Save data frame containing the negative log likelihood info for all parameter co
 output_path = '/home/jovyan/work/all_nll_df.csv'
 CSV.write(output_path, all_nll_df)
 ```
+
+You might have noticed that the grid search did not identify the true parameters as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization.
+
+The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
+
+```julia
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
+
+best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args)
+
+sort!(all_nll_df, [:nll])
+```

@@ -1,9 +1,10 @@
-name: BaseDockerImage
+name: DockerImage
 
 on:
   push:
     paths:
       - 'Dockerfile'
+      - 'Project.toml'
 
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox

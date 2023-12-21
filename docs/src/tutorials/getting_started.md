@@ -49,7 +49,9 @@ MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 Fixation information that will be fed in to the model for simulations should be of type [`FixationData`](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#Fixation-data). This type organizes empirical fixations to distributions conditional on fixation type (first, second etc.) and value difference.
 
-This organizes both the behavioral and the fixation data as a dictionary of Trial objects indexed by subject
+This organizes both the behavioral and the fixation data as a dictionary of `Trial` objects indexed by subject. Here, we are reading in empirical data that comes with the package but we will not be making use of the observed choices and response times. The empirical data is only used to extract value difference information to index the fixation data correctly. The choices and response times will be simulated below based on the parameters we specified above.
+
+Note also that the `ADDM.load_data_from_csv()` will expect columns `parcode`,`trial`, `rt`, `choice`, `item_left`, `item_right` and convert `item_left` and`item_right` to `valueLeft` and `valueRight`. 
 
 ```julia
 data = ADDM.load_data_from_csv("./data/expdata.csv", "./data/fixations.csv")

@@ -2,7 +2,7 @@
     grid_search(data, likelihood_fn, param_grid, return_grid_likelihoods = false; 
                 likelihood_args =  (timeStep = 10.0, approxStateStep = 0.1), return_trial_likelihoods = false)
 
-Compute the likelihood of either observed or simulated data for all parameter combinations in paramGrid.
+Compute the likelihood of either observed or simulated data for all parameter combinations in `param_grid`.
 
 # Arguments
 

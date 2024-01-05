@@ -15,7 +15,7 @@ Broadly, this involves defining three parts:
 
 ## Load package
 
-```julia
+```@repl 1
 using ADDM
 using Distributions
 ```
@@ -26,7 +26,7 @@ The built-in model has a `decay` parameter for a linear decay of the `barrier`. 
 
 Based on the [built-in trial simulators as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/simulate_data.jl) the trial simulator would look like the following:
 
-```julia
+```@repl 1
 function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData, 
                         valueLeft::Number, valueRight::Number, 
                         timeStep::Number=10.0, numFixDists::Int64=3, cutOff::Number=100000)
@@ -224,14 +224,14 @@ end
 
 Now create a model object of class `aDDM` to store the parameters of our model. There are two ways of doing this. First, we could use the `ADDM.define_model` function. That would like:
 
-```julia
+```@repl 1
 my_model = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, nonDecisionTime = 100, bias = 0.0)
 my_model.λ = .05
 ```
 
 The `ADDM.define_model` function is limited to the standard parameter names. So the new parameter `λ` is added to the model after its creation. Alternatively, we can create an empty model object and add our parameters individually.
 
-```julia
+```@repl 1
 my_model = ADDM.aDDM()
 my_model.d = 0.007
 my_model.σ = 0.03
@@ -248,7 +248,7 @@ my_model.λ = .05
 
 We will use sample empirical data from Krajbich et al. (2010) to create sample stimuli and fixation distributions. Importantly, we will *not* be using the empirical choices and response times but instead simulate our own data given the generative process we defined in our custom model and the parameter values we specify for it (i.e. in this notebook we do not fit this custom model to the empirical data from Krajbich et al.).
 
-```julia
+```@repl 1
 using CSV
 using DataFrames
 
@@ -257,7 +257,7 @@ tmp = DataFrame(CSV.File(fn, delim=","))
 my_stims = (valueLeft = tmp.item_left, valueRight = tmp.item_right)
 ```
 
-```julia
+```@repl 1
 data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
 vDiffs = sort(unique(my_stims.valueLeft - my_stims.valueRight))
 my_fixations = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs = vDiffs)
@@ -270,7 +270,7 @@ my_fixations.fixations[2][7] = my_fixations.fixations[3][7]
 
 There are 979 rows in the stims. We'll add more trials to help recover true parameters.
 
-```julia
+```@repl 1
 my_args = (timeStep = 10.0, cutOff = 20000, fixationData = my_fixations)
 
 my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args)
@@ -286,7 +286,7 @@ end
 
 ## Define likelihood function
 
-```julia
+```@repl 1
 function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number = 10.0, 
                                    approxStateStep::Number = 0.1)
     
@@ -453,7 +453,7 @@ end
 
 #### Define search grid
 
-```julia
+```@repl 1
 fn = "./data/custom_model_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
@@ -463,7 +463,7 @@ param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
 Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
 
-```julia
+```@repl 1
 using LinearAlgebra
 
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0)

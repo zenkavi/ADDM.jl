@@ -1,9 +1,11 @@
 # Parameter estimation on empirical data
 
-## Load package
+## Load packages
 
-```julia
+```@repl 1
 using ADDM
+using CSV
+using DataFrames
 ```
 
 ## Read in data
@@ -19,7 +21,7 @@ ADDM.Trial(1, 1474.0, -5, 5, Number[3, 0, 1, 0, 2, 0], Number[270.0, 42.0, 246.0
 where the first element is choice (-1 for left, +1 for right), second element is response time in ms, third is value of left option, fourth is value of right option. Fixation data is specified in the fourth and fifth elements as fixation location (1 for left, 2 for right) and fixation duration (in ms) respectively.  
 
 
-```julia
+```@repl 1
 krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
 ```
 
@@ -27,7 +29,7 @@ krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./d
 
 Using a grid of 64 parameter combinations with `d` in {0.0001, 0.00015, 0.0002, 0.00025}, `μ` in {80, 100, 120, 140}, `θ` in {0.3, 0.5, 0.7, 0.9}  and `σ = d*μ`   
 
-```julia
+```@repl 1
 fn = "./data/Krajbich_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
@@ -50,13 +52,13 @@ end
 
 To view best parameter estimates for each subject
 
-```julia
+```@repl 1
 best_pars
 ```
 
 Plot variability in the negative log likelihoods for each parameter combination for each subject
 
-```julia
+```@repl 1
 using StatsPlots
 
 wide_nll_df = unstack(all_nll_df, :parcode, :nll)

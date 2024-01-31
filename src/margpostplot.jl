@@ -34,6 +34,7 @@ function update_ticks_guides(d::KW, labs, i, j, n)
 end
 
 @recipe function f(mpp::MargPostPlot)
+    # Wrangle input data of marginal posteriors
     mps = mpp.args[1]
     n = 0
     for i in mps
@@ -43,8 +44,17 @@ end
     end
     mps1 = mps[1:n]
     mps2 = mps[n+1:length(mps)]
-    labs = pop!(plotattributes, :label, [""])
 
+    # Get labels
+    # labs = pop!(plotattributes, :label, [""])
+    labs = []
+    for i in mps1
+      append!(labs, names(i))
+    end
+    labs = unique(labs)
+    labs = [i for i in labs if i != "posterior_sum"]
+
+    # Specify layout
     g = grid(n, n)
     indices = zeros(Int8, (n, n))
     s = 1
@@ -58,9 +68,8 @@ end
       end
     end
 
-    link := :x  # need custom linking for y
-    # layout := g
-    layout := grid(n, n)
+    link := :x  
+    layout := g
     legend := false
     foreground_color_border := nothing
     margin := 1mm
@@ -68,7 +77,7 @@ end
 
     title = get(plotattributes, :title, "")
     title_location = get(plotattributes, :title_location, :center)
-    title := "" # does this over-write user-specific titles?
+    title := "" # does this over-write user-specific titles? No. It gets overwritten later if needed.
 
     # barplots for individual parameters on the diagonal
     for i = 1:n
@@ -78,12 +87,10 @@ end
             end
             seriestype := :bar
             subplot := indices[i, i]
-            # legend := false
-            # subplot := i
             grid := false
             xformatter --> ((i == n) ? :auto : (x -> ""))
             yformatter --> ((i == 1) ? :auto : (y -> ""))
-            # update_ticks_guides(plotattributes, labs, i, i, n)
+            update_ticks_guides(plotattributes, labs, i, i, n)
             # data that will be plotted using the seriestype
             vx = view(mps1[i], :, 1) # param column
             vy = view(mps1[i], :, 2) # posterior_sum column
@@ -100,7 +107,7 @@ end
         for i = 1:n
             j == i && continue
             subplot := indices[i, j]
-            # update_ticks_guides(plotattributes, labs, i, j, n)
+            update_ticks_guides(plotattributes, labs, i, j, n)
             if i > j
                 # heatmaps below diagonal
                 @series begin
@@ -120,10 +127,6 @@ end
                       end
                     end
                     vx, vy, vz
-                end
-              else
-                @series begin
-                  blank := 1
                 end
             end
         end

@@ -6,6 +6,7 @@
 using ADDM
 using CSV
 using DataFrames
+using StatsPlots
 ```
 
 ## Read in data
@@ -59,8 +60,6 @@ best_pars
 Plot variability in the negative log likelihoods for each parameter combination for each subject
 
 ```@repl 1
-using StatsPlots
-
 wide_nll_df = unstack(all_nll_df, :parcode, :nll)
 select!(wide_nll_df, Not([:d, :sigma, :theta]))
 colnames = names(wide_nll_df)

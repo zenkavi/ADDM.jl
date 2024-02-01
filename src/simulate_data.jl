@@ -254,7 +254,6 @@ Generate a DDM trial given the item values.
     # Returns
 - A Trial object resulting from the simulation.
 """
-
 function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
     

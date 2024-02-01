@@ -18,7 +18,6 @@ ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 Recipe modified from 
 https://github.com/JuliaPlots/StatsPlots.jl/blob/master/src/corrplot.jl
 """
-
 @userplot MargPostPlot
 
 recipetype(::Val{:margpostplot}, args...) = MargPostPlot(args)

@@ -306,7 +306,7 @@ end
 Compute likelihood of a dataset for a given model.
 
 # Arguments
-- `model`: aDDM object.
+- `model`: aDDM object. Holds info on the parameter values for the likelihood function.
 - `data`: Vector of `ADDM.Trial` objects. 
 - `likelihood_fn`: Name of the function that computes the likelhoods of a trial for the given model.
 - `likelihood_args`: Named tuple containing kwargs that should be fed to `likelihood_fn`

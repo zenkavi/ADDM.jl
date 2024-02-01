@@ -36,6 +36,7 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
         throw(error("Missing field in experimental data file. Fields required: parcode, trial, rt, choice, item_left, item_right"))
     end
     
+    # Organize csv that was read in into a dictionary indexed by subject id's
     data = Dict()
     subjectIds = unique(df.parcode)
     for subjectId in subjectIds
@@ -59,12 +60,15 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
           return nothing
       end
     
-      df = DataFrame(CSV.File(fixationsFileName, delim=","))
+      # df = DataFrame(CSV.File(fixationsFileName, delim=","))
     
       if (!("parcode" in names(df)) || !("trial" in names(df)) || !("fix_item" in names(df)) || !("fix_time" in names(df)))
           throw(error("Missing field in fixations file. Fields required: parcode, trial, fix_item, fix_time"))
       end
       
+      # Add fixation data to the data dictionary indexed by subject id containing choice and response times
+      # This adds the info into the dictionary only as the fixation locations and durations for each trial
+      # It is not organized in any specific "FixationData" way yet (indexed by fixation number and value difference)
       subjectIds = unique(df.parcode)
       for subjectId in subjectIds
           if !(subjectId in keys(data))

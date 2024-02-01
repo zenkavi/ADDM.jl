@@ -5,6 +5,7 @@ on:
     paths:
       - 'Dockerfile'
       - 'Project.toml'
+      - 'src/**'
 
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox

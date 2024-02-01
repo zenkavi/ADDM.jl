@@ -96,4 +96,3 @@ If you need help, please [open a GitHub issue](https://github.com/aDDM-Toolbox/A
 ## Citing `ADDM.jl`
 
 If you use `ADDM.jl`, we ask that you please cite the following:
-

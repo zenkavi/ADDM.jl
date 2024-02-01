@@ -7,15 +7,20 @@ module ADDM
 
 using Base.Threads
 using BenchmarkTools
+using Combinatorics
 using CSV
 using DataFrames
+using DataFramesMeta
 using Distributions
 using LinearAlgebra
 using Plots
+import Plots: _cycle
+using Plots.PlotMeasures
 using Random
 using REPL
-using Statistics
 using StatsBase
+using Statistics
+using StatsPlots
 
 # If you want functions exposed to the global scope when usinging the package
 # through `using ADDM` then you would add `export ...` statements here
@@ -26,5 +31,7 @@ include("simulate_data.jl")
 include("compute_likelihood.jl")
 include("util.jl")
 include("grid_search.jl")
+include("marginal_posteriors.jl")
+include("margpostplot.jl")
 
 end

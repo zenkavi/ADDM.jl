@@ -65,10 +65,13 @@ model simulations.
     (1st, 2nd, etc). If 'difficulty', they will be indexed by type and by
     trial difficulty, i.e., the absolute value for the trial's value
     difference. If 'fixation', they will be indexed by type and by the
-    value difference between the fixated and unfixated items.
+    value difference between the fixated and unfixated items. Note that 
+    this is not the same as the value difference for the trial. 
 - `valueDiffs`: list of integers. If fixDistType is 'difficulty' or
     'fixation', valueDiffs is a range correspoding to the item values to
-    be used when indexing the fixation distributions.
+    be used when indexing the fixation distributions. So if `difficulty`
+    make sure to input absolute value differences if that is the measure
+    of difficulty of the decision.
 - `subjectIds`: list of strings corresponding to the subjects whose data
     should be used. If not provided, all existing subjects will be used.
 
@@ -92,6 +95,11 @@ function process_fixations(data::Dict; timeStep::Number = 10,
     latenciesList = Number[]
     transitionsList = Number[]
     fixationsList = Dict()
+
+    # Set up the indexing scheme of fixationsList based on numFixDists and fixDistType
+    # This does not distinguish between difficulty and fixation. Should it?
+    # It doesn't have to but if fixDistType is `difficulty` then valueDiffs should be the indices of difficulty 
+    # e.g. absolute value differences if that's the indicator of the difficulty of the decision
     for fixNumber in 1:numFixDists
         if fixDistType == "simple"
             fixationsList[fixNumber] = Number[]
@@ -103,12 +111,15 @@ function process_fixations(data::Dict; timeStep::Number = 10,
         end
     end
     
+    # Get subject id's either fro input argument or from the keys of the data dictionary
     subjectIds = length(subjectIds) > 0 ? [String(subj) for subj in subjectIds] : collect(keys(data))
 
     for subjectId in subjectIds
         for trial in data[subjectId]
             
             # Discard trial if it has 1 or less item fixations.
+            # Do this not just by checking the length of items because it might contain latencies and transitions
+            # Instead check specifically for the number of item fixations
             items = trial.fixItem
             
             if (!any(items!=nothing) || length(vcat(items[findall(x -> x == 1, items)], items[findall(x -> x == 2, items)])) <= 1)

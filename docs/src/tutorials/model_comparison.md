@@ -20,7 +20,7 @@ Run grid search for a single subject. This computes the nll for 64 parameter com
 
 ```@repl 1
 # fn = "./data/Krajbich_grid.csv"
-fn = "./data/Krajbich_grid2.csv"
+fn = "./data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 

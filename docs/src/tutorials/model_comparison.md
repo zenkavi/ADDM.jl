@@ -13,14 +13,14 @@ using StatsPlots
 Read in data from Krajbich et al. (2010)
 
 ```@repl 1
-krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
+krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
 ```
 
 Run grid search for a single subject. This computes the nll for 64 parameter combinations for a single subject.
 
 ```@repl 1
 # fn = "./data/Krajbich_grid.csv"
-fn = "./data/Krajbich_grid3.csv"
+fn = "../../../data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 

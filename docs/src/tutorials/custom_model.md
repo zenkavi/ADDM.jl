@@ -252,13 +252,13 @@ We will use sample empirical data from Krajbich et al. (2010) to create sample s
 using CSV
 using DataFrames
 
-fn = "./data/Krajbich2010_stims.csv"
+fn = "../../../data/Krajbich2010_stims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 my_stims = (valueLeft = tmp.item_left, valueRight = tmp.item_right)
 ```
 
 ```@repl 1
-data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
+data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
 vDiffs = sort(unique(my_stims.valueLeft - my_stims.valueRight))
 my_fixations = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs = vDiffs)
 
@@ -454,7 +454,7 @@ end
 #### Define search grid
 
 ```@repl 1
-fn = "./data/custom_model_grid.csv"
+fn = "../../../data/custom_model_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 ```

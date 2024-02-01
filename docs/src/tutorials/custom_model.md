@@ -236,6 +236,7 @@ my_model = ADDM.aDDM()
 my_model.d = 0.007
 my_model.σ = 0.03
 my_model.θ = .6
+my_model.η = 0
 my_model.barrier = 1
 my_model.nonDecisionTime = 100
 my_model.bias = 0.0

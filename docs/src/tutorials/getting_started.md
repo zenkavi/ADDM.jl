@@ -41,7 +41,7 @@ MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 
     If you're going to create random stimuli you should make sure to have value differences that correspond to what you plan to fit in for fixation data.
 
-```@repl 1
+```
 Random.seed!(38535)
 MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 ```
@@ -72,7 +72,7 @@ MyFixationData = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs
 
 ### Simulate data
 
-Defining additional arguments for aDDM trial simulator (e.g. fixation data). Note this needs to me a NamedTuple, i.e. must have at least two elements Otherwise it tries to apply `iterate` to the single element which would likely end with a  `MethodError`. In this example I specify `timeStep` and `cutoff` in addition to the  only required argument without a default `fixationData` to avoid this.
+First we define additional arguments for aDDM trial simulator (e.g. fixation data, time step for simulations). Note these need to be specified as a `NamedTuple`, and must have at least two elements. Otherwise it tries to apply `iterate` to the single element which would likely end with a  `MethodError`. In this example I specify `timeStep` and `cutoff` in addition to the  only required argument without a default `fixationData` to avoid this.
 
 ```@repl 1
 MyArgs = (timeStep = 10.0, cutOff = 20000, fixationData = MyFixationData)
@@ -86,7 +86,7 @@ SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 
 Data can also be simulated from [probability distributions of fixation data](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#ADDM.convert_to_fixationDist).
 
-```@repl 1
+```
 MyFixationDist, MyTimeBins = ADDM.convert_to_fixationDist(MyFixationData)
 
 MyBlankFixationData = ADDM.FixationData(MyFixationData.probFixLeftFirst, MyFixationData.latencies, MyFixationData.transitions, Dict())
@@ -110,7 +110,7 @@ best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood
 
 Examine the sum of negative log likelihoods for each parameter combination.
 
-```
+```@repl 1
 sort!(all_nll_df, [:nll])
 ```
 
@@ -120,12 +120,12 @@ Save data frame containing the negative log likelihood info for all parameter co
 
     Make sure that you have mounted a local directory to your container if you're working through this tutorial in a docker container. The output path below is the one specified in the installation instructions. You should change it if you want to save your output elsewhere.
 
-```
-output_path = '/home/jovyan/work/all_nll_df.csv'
-CSV.write(output_path, all_nll_df)
-```
+    ```
+    output_path = '/home/jovyan/work/all_nll_df.csv'
+    CSV.write(output_path, all_nll_df)
+    ```
 
-You might have noticed that the grid search did not identify the true parameters as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization.
+You might have noticed that the grid search did not identify the true parameters (`d = 0.007, σ = 0.03, θ = .6`) as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization.
 
 The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
 

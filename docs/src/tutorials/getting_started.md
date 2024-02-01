@@ -29,7 +29,8 @@ This should be of type `NamedTuple` with required field names (case sensitive): 
 using CSV
 using DataFrames
 
-fn = "./data/stims.csv"
+# fn = "./data/stims.csv"
+fn = "../../../data/stims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 ```
@@ -54,7 +55,7 @@ This organizes both the behavioral and the fixation data as a dictionary of `Tri
 Note also that the `ADDM.load_data_from_csv()` will expect columns `parcode`,`trial`, `rt`, `choice`, `item_left`, `item_right` and convert `item_left` and`item_right` to `valueLeft` and `valueRight`. 
 
 ```@repl 1
-data = ADDM.load_data_from_csv("./data/expdata.csv", "./data/fixations.csv")
+data = ADDM.load_data_from_csv("../../../data/expdata.csv", "../../../data/fixations.csv")
 ```
 
 Extract value difference information from the dataset to use in processing the fixations
@@ -100,7 +101,7 @@ SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 The `ADDM.grid_search` function computes
 
 ```@repl 1
-fn = "./data/addm_grid.csv"
+fn = "../../../data/addm_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 

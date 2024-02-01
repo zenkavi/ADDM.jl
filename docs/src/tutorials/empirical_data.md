@@ -22,7 +22,7 @@ where the first element is choice (-1 for left, +1 for right), second element is
 
 
 ```@repl 1
-krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
+krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
 ```
 
 ## Grid search
@@ -30,7 +30,7 @@ krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./d
 Using a grid of 64 parameter combinations with `d` in {0.0001, 0.00015, 0.0002, 0.00025}, `μ` in {80, 100, 120, 140}, `θ` in {0.3, 0.5, 0.7, 0.9}  and `σ = d*μ`   
 
 ```@repl 1
-fn = "./data/Krajbich_grid.csv"
+fn = "../../../data/Krajbich_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 

@@ -14,6 +14,8 @@ using DataFramesMeta
 using Distributions
 using LinearAlgebra
 using Plots
+import Plots: _cycle
+using Plots.PlotMeasures
 using Random
 using REPL
 using StatsBase
@@ -30,5 +32,6 @@ include("compute_likelihood.jl")
 include("util.jl")
 include("grid_search.jl")
 include("marginal_posteriors.jl")
+include("margpostplot.jl")
 
 end

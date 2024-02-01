@@ -1,12 +1,3 @@
-
-What metrics can you use to compare non-nested models with different number of parameters?
-
-WAIC
-
-Cross validation
-
-Posterior model probability/Bayes factor
-
 # Uncertainty in the best fitting parameters of a single generative process
 
 ## Posterior model probability
@@ -19,6 +10,8 @@ using DataFramesMeta
 using StatsPlots
 ```
 
+Read in data from Krajbich et al. (2010)
+
 ```@repl 1
 krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./data/Krajbich2010_fixations.csv")
 ```
@@ -26,13 +19,14 @@ krajbich_data = ADDM.load_data_from_csv("./data/Krajbich2010_behavior.csv", "./d
 Run grid search for a single subject. This computes the nll for 64 parameter combinations for a single subject.
 
 ```@repl 1
-fn = "./data/Krajbich_grid.csv"
+# fn = "./data/Krajbich_grid.csv"
+fn = "./data/Krajbich_grid2.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-subj_data = krajbich_data["14"]
+subj_data = krajbich_data["18"]
   
 best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_trial_likelihood, param_grid, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
@@ -41,7 +35,7 @@ best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_
 
 ```
 
-Merge model posteriors with the model parameters they refer to
+Merge model posteriors with the model parameters they refer to. This creates a dataframe instead of the `model_posteriors` dictionary that is easier to make plots with.
 
 ```@repl 1
 posteriors_df = DataFrame()
@@ -53,7 +47,9 @@ for (k, v) in param_grid
 end
 ```
 
-Plot model posteriors
+Plot model posteriors. Note the use of `@chain` and other operations such as `@rsubset` etc. for `dplyr` like functionality in Julia through `DataFrameMeta.jl`.  
+
+Note also that we're only plotting the posteriors for models that have a meaningful amount of probability mass instead of all the 64 models that were tested.
 
 ```@repl 1
 plot_df = @chain posteriors_df begin
@@ -68,16 +64,29 @@ plot_df = @chain posteriors_df begin
 ## Marginal posteriors for parameters
 
 
-Compute marginal posteriors
+Compute and plot posteriors for each parameter
 
 ```@repl 1
-ADDM.marginal_posteriors(param_grid, model_posteriors)
+param_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors)
+
+plot_array = Any[]
+for plot_df in param_posteriors
+  x_lab = names(plot_df)[1]
+  cur_plot = @df plot_df bar(plot_df[:, x_lab], :posterior_sum, leg = false, ylabel = "p(" * x_lab * " = x|data)", xlabel = x_lab )
+  push!(plot_array, cur_plot) 
+end
+plot(plot_array...)
+
 ```
 
-Plot marginal posteriors
+Compute and plot marginal posteriors with heatmaps
 
 ```@repl 1
+marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
+
+margpostplot(marginal_posteriors)
 ```
+
 
 # Comparing fit of different generative processes
 

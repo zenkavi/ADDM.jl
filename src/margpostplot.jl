@@ -18,18 +18,13 @@ ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 Recipe modified from 
 https://github.com/JuliaPlots/StatsPlots.jl/blob/master/src/corrplot.jl
 """
-import Plots: _cycle
-using Plots.PlotMeasures
 
 @userplot MargPostPlot
 
 recipetype(::Val{:margpostplot}, args...) = MargPostPlot(args)
 
 function update_ticks_guides(d::KW, labs, i, j, n)
-    # d[:title]  = (i==1 ? _cycle(labs,j) : "")
-    # d[:xticks] = (i==n)
     d[:xguide] = (i == n ? _cycle(labs, j) : "")
-    # d[:yticks] = (j==1)
     d[:yguide] = (j == 1 ? _cycle(labs, i) : "")
 end
 
@@ -46,7 +41,6 @@ end
     mps2 = mps[n+1:length(mps)]
 
     # Get labels
-    # labs = pop!(plotattributes, :label, [""])
     labs = []
     for i in mps1
       append!(labs, names(i))
@@ -74,6 +68,7 @@ end
     foreground_color_border := nothing
     margin := 1mm
     titlefont := font(11)
+    xrotation := 25
 
     title = get(plotattributes, :title, "")
     title_location = get(plotattributes, :title_location, :center)
@@ -100,10 +95,6 @@ end
 
     # heatmaps below diagonal
     for j = 1:n
-      # this fills things by row. should i change it depending on how mpp2 is indexed?
-        # ylink := setdiff(vec(indices[i, :]), indices[i, i])
-      # filling by column would be
-        # xlink:= setdiff(vec(indices[:, j]), indices[j, j])
         for i = 1:n
             j == i && continue
             subplot := indices[i, j]

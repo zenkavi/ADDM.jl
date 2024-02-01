@@ -11,9 +11,9 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Tutorials" => ["tutorials/getting_started.md",
-                        "tutorials/empirical_data.md"]
-                        #"tutorials/custom_model.md",
-                        #"tutorials/model_comparison.md"],
+                        "tutorials/empirical_data.md",
+                        "tutorials/custom_model.md",
+                        "tutorials/model_comparison.md"],
         "API Reference" => "apireference.md",
     ],
     doctestfilters = [r"[\s\-]?\d\.\d{6}e[\+\-]\d{2}"],

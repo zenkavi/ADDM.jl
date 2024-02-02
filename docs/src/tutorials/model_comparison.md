@@ -59,7 +59,10 @@ plot_df = @chain posteriors_df begin
   end
 
 @df plot_df bar(:x_label, :posterior, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
+
+savefig("plot2.png"); nothing # hide
 ```
+![plot](plot2.png)
 
 ## Marginal posteriors for parameters
 
@@ -77,7 +80,9 @@ for plot_df in param_posteriors
 end
 plot(plot_array...)
 
+savefig("plot3.png"); nothing # hide
 ```
+![plot](plot3.png)
 
 Compute and plot marginal posteriors with heatmaps
 
@@ -85,7 +90,10 @@ Compute and plot marginal posteriors with heatmaps
 marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 
 margpostplot(marginal_posteriors)
+
+savefig("plot4.png"); nothing # hide
 ```
+![plot](plot4.png)
 
 
 # Comparing fit of different generative processes

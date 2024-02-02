@@ -7,11 +7,11 @@ In this tutorial we lay out the framework for how to incorporate such models wit
 Broadly, this involves defining three parts: 
 
 1. trial simulator describing how the new parameter changes the data generating process resulting in a choice and response time
-  - this is then fed into `ADDM.simulate_data` along with the model object and stimuli to generate choice and response times.
+    - this is then fed into `ADDM.simulate_data` along with the model object and stimuli to generate choice and response times.
 2. model object with new parameter
-  - this is only a container of key-value pairs of parameter names and values used a convenient wrapper to feed into the simulator and likelihood computer.
+    - this is only a container of key-value pairs of parameter names and values used a convenient wrapper to feed into the simulator and likelihood computer.
 3. trial likelihood calculator computing the probability of the observed choice and response time
-  - this is then fed into `ADDM.grid_search` along with the data you want to compute the likelihoods for and the parameter search space.
+    - this is then fed into `ADDM.grid_search` along with the data you want to compute the likelihoods for and the parameter search space.
 
 ## Load package
 

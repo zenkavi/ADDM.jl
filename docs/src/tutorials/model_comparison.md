@@ -100,16 +100,16 @@ savefig("plot5.png"); nothing # hide
 
 ## Comparing different generative processes
 
-## Estimate best fitting parameters separately for each process
+1. Estimate best fitting parameters separately for each process  
+    - Is this necessary? Do uou only need trial likelihoods and priors for each model (that are indexed in a way that leaves no ambiguity about which model generated with trial likelihoods)
+    - You can't compute marginal parameter distributions across different generative processes (I don't think) but you could compare the two best fitting parameter combinations from one generative process to an entirely different generative process, as long as you have the trial likelihoods for each model.  
+2. Compute trial likelihoods plugging in best fitting parameters  
+3. Compute model posterior using trial likelihoods  
+    - Does this violate any assumptions?
 
-This isn't actually necessary. You only need trial likelihoods and priors for each model that are indexed in a way that leaves no ambiguity about which model generated with trial likelihoods
 
-You can't compute marginal parameter distributions across different generative processes (I don't think) but you could compare the two best fitting parameter combinations from one generative process to an entirely different generative process, as long as you have the trial likelihoods for each model.
-
-## Compute trial likelihoods plugging in best fitting parameters
-
-
-## More..
+## More?
 
 - True vs. simulated data
-- Cross-validation
+    - RT distributions conditional on choice
+- Cross-validation?

@@ -1,6 +1,6 @@
 # push!(LOAD_PATH,"../src/")
 
-ENV["GKSwstype"] = "100"
+# ENV["GKSwstype"] = "100"
 using Documenter, ADDM
 
 makedocs(

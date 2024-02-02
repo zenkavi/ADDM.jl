@@ -1,6 +1,8 @@
-# Uncertainty in the best fitting parameters of a single generative process
+# Model comparison
 
-## Posterior model probability
+## Comparing parameters of a single generative processes
+
+### Posterior model probability
 
 ```@repl 1
 using ADDM
@@ -35,6 +37,8 @@ best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_
 
 ```
 
+### Individual parameter posteriors
+
 Merge model posteriors with the model parameters they refer to. This creates a dataframe instead of the `model_posteriors` dictionary that is easier to make plots with.
 
 ```@repl 1
@@ -60,12 +64,11 @@ plot_df = @chain posteriors_df begin
 
 @df plot_df bar(:x_label, :posterior, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
-savefig("plot2.png"); nothing # hide
+savefig("plot3.png"); nothing # hide
 ```
-![plot](plot2.png)
+![plot](plot3.png)
 
-## Marginal posteriors for parameters
-
+### Marginal posteriors for parameters
 
 Compute and plot posteriors for each parameter
 
@@ -80,23 +83,22 @@ for plot_df in param_posteriors
 end
 plot(plot_array...)
 
-savefig("plot3.png"); nothing # hide
+savefig("plot4.png"); nothing # hide
 ```
-![plot](plot3.png)
+![plot](plot4.png)
 
 Compute and plot marginal posteriors with heatmaps
 
 ```@repl 1
 marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 
-margpostplot(marginal_posteriors)
+ADDM.margpostplot(marginal_posteriors)
 
-savefig("plot4.png"); nothing # hide
+savefig("plot5.png"); nothing # hide
 ```
-![plot](plot4.png)
+![plot](plot5.png)
 
-
-# Comparing fit of different generative processes
+## Comparing different generative processes
 
 ## Estimate best fitting parameters separately for each process
 
@@ -107,4 +109,7 @@ You can't compute marginal parameter distributions across different generative p
 ## Compute trial likelihoods plugging in best fitting parameters
 
 
-# True vs. simulated data
+## More..
+
+- True vs. simulated data
+- Cross-validation

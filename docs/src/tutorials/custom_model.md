@@ -17,7 +17,11 @@ Broadly, this involves defining three parts:
 
 ```@repl 1
 using ADDM
+using CSV
+using DataFrames
 using Distributions
+using LinearAlgebra
+using StatsPlots
 ```
 
 ## Define simulator
@@ -226,12 +230,15 @@ Now create a model object of class `aDDM` to store the parameters of our model. 
 
 ```@repl 1
 my_model = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, nonDecisionTime = 100, bias = 0.0)
+```
+
+```@repl 1
 my_model.λ = .05
 ```
 
 The `ADDM.define_model` function is limited to the standard parameter names. So the new parameter `λ` is added to the model after its creation. Alternatively, we can create an empty model object and add our parameters individually.
 
-```@repl 1
+```
 my_model = ADDM.aDDM()
 my_model.d = 0.007
 my_model.σ = 0.03
@@ -250,9 +257,6 @@ my_model.λ = .05
 We will use sample empirical data from Krajbich et al. (2010) to create sample stimuli and fixation distributions. Importantly, we will *not* be using the empirical choices and response times but instead simulate our own data given the generative process we defined in our custom model and the parameter values we specify for it (i.e. in this notebook we do not fit this custom model to the empirical data from Krajbich et al.).
 
 ```@repl 1
-using CSV
-using DataFrames
-
 fn = "../../../data/Krajbich2010_stims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 my_stims = (valueLeft = tmp.item_left, valueRight = tmp.item_right)
@@ -269,20 +273,34 @@ my_fixations.fixations[2][7] = my_fixations.fixations[3][7]
 
 #### Simulate choice and response times
 
-There are 979 rows in the stims. We'll add more trials to help recover true parameters.
+There are 97b rows in the stims. We'll add more trials to help recover true parameters.
 
 ```@repl 1
-my_args = (timeStep = 10.0, cutOff = 20000, fixationData = my_fixations)
+length(my_stims.valueRight)
+```
 
-my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args)
+```@repl 1
+my_args = (timeStep = 10.0, cutOff = 20000, fixationData = my_fixations);
+```
 
+Simuluate one set of data with the stimuli.
+
+```@repl 1
+my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args);
+```
+
+Add two more sets of data
+
+```@repl 1
 for i in 1:2
   this_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args)
   append!(my_sim_data, this_sim_data)
   i += 1
-end
+end;
+```
 
-# my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args)
+```@repl 1
+length(my_sim_data)
 ```
 
 ## Define likelihood function
@@ -455,25 +473,39 @@ end
 #### Define search grid
 
 ```@repl 1
-fn = "../../../data/custom_model_grid.csv"
-tmp = DataFrame(CSV.File(fn, delim=","))
+fn = "../../../data/custom_model_grid.csv";
+tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 ```
 
 #### Run grid search on simulated data
 
-Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
-
 ```@repl 1
-using LinearAlgebra
-
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0)
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, nll_df = ADDM.grid_search(my_sim_data, my_likelihood_fn, param_grid, fixed_params, likelihood_args = my_likelihood_args)
+best_pars, nll_df, model_posteriors = ADDM.grid_search(my_sim_data, my_likelihood_fn, param_grid, 
+    fixed_params, 
+    likelihood_args=my_likelihood_args, 
+    return_model_posteriors = true);
+```
 
+The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
+
+```@repl 1
 sort!(nll_df, [:nll])
 
 show(nll_df, allrows = true)
 ```
+
+The posteriors have no uncertainty either.
+
+```@repl 1
+marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
+
+ADDM.margpostplot(marginal_posteriors)
+
+savefig("plot2.png"); nothing # hide
+```
+![plot](plot2.png)

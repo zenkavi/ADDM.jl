@@ -26,6 +26,7 @@ Unidecode = "967fb449-e509-55aa-8007-234b4096b967"
 [compat]
 BenchmarkTools = "1"
 CSV = "0.10"
+Combinatorics = "1"
 DataFrames = "1"
 Distributions = "0.25"
 Documenter = "1"

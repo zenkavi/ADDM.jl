@@ -26,14 +26,14 @@ fn = "../../../data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
 
-subj_data = krajbich_data["18"]
+subj_data = krajbich_data["18"];
   
 best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_trial_likelihood, param_grid, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
-    return_model_posteriors = true)
+    return_model_posteriors = true);
 
 ```
 
@@ -42,13 +42,13 @@ best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_
 Merge model posteriors with the model parameters they refer to. This creates a dataframe instead of the `model_posteriors` dictionary that is easier to make plots with.
 
 ```@repl 1
-posteriors_df = DataFrame()
+posteriors_df = DataFrame();
 
 for (k, v) in param_grid
   cur_row = DataFrame([v])
   cur_row.posterior = [model_posteriors[k]]
   append!(posteriors_df, cur_row)
-end
+end;
 ```
 
 Plot model posteriors. Note the use of `@chain` and other operations such as `@rsubset` etc. for `dplyr` like functionality in Julia through `DataFrameMeta.jl`.  
@@ -100,16 +100,27 @@ savefig("plot5.png"); nothing # hide
 
 ## Comparing different generative processes
 
-1. Estimate best fitting parameters separately for each process  
-    - Is this necessary? Do uou only need trial likelihoods and priors for each model (that are indexed in a way that leaves no ambiguity about which model generated with trial likelihoods)
-    - You can't compute marginal parameter distributions across different generative processes (I don't think) but you could compare the two best fitting parameter combinations from one generative process to an entirely different generative process, as long as you have the trial likelihoods for each model.  
-2. Compute trial likelihoods plugging in best fitting parameters  
-3. Compute model posterior using trial likelihoods  
-    - Does this violate any assumptions?
+```@repl 1
+fn = "../../../data/Krajbich_grid3.csv"
+tmp = DataFrame(CSV.File(fn, delim=","))
+tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood"
+param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
+
+fn = "../../../data/custom_model_grid.csv"
+tmp = DataFrame(CSV.File(fn, delim=","))
+tmp.likelihood_fn .= "my_likelihood_function"
+param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))))
+
+# Increase the indices of the second model's parameter combinations 
+# This avoid overwriting the parameter combinations with the same index 
+# in the first parameter grid
+param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_grid2))
+
+param_grid = Dict(param_grid1..., param_grid2...)
+```
 
 
 ## More?
 
 - True vs. simulated data
     - RT distributions conditional on choice
-- Cross-validation?

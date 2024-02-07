@@ -12,6 +12,8 @@ Compute the likelihood of either observed or simulated data for all parameter co
   Should be a vector of `ADDM.Trial` objects.
 - `likelihood_fn`: Name of likelihood function to be used to compute likelihoods. 
   The toolbox has `ADDM.aDDM_get_trial_likelihood` and `ADDM.aDDM_get_trial_likelihood` defined.
+  If comparing different generative processes then leave at default value of `nothing`
+  and make sure to define a `likelihood_fn` in the `param_grid`.
 - `param_grid`: Grid of parameter combinations for which the sum of nll's for the `data` is 
   computed.
 - `fixed_params`: Default `Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0)`.
@@ -28,7 +30,7 @@ Compute the likelihood of either observed or simulated data for all parameter co
 - `return_model_posteriors`: Default `false`. If true, will return the posterior probability 
   for each parameter combination in `param_grid`.
 - `model_priors`: priors for each model probability if not assummed to be uniform. Should be
-  specified as a `Dict` with values of probabilities mathing the keys for the correct model
+  specified as a `Dict` with values of probabilities matching the keys for the correct model
   specified in `param_grid`.
 
 # Returns
@@ -37,7 +39,7 @@ Compute the likelihood of either observed or simulated data for all parameter co
 - `posteriors`: Likelihood for each trial for each parameter combination.
 
 """
-function grid_search(data, likelihood_fn, param_grid, 
+function grid_search(data, param_grid, likelihood_fn = nothing, 
                     fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
                     return_grid_nlls = true,
                     likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
@@ -64,6 +66,23 @@ function grid_search(data, likelihood_fn, param_grid,
   # because the keys index k is used to index the all_nll vector as well
   for (k, cur_grid_params) in param_grid
     
+    # If likelihood_fn is not defined as argument to the function 
+    # it should be defined in the param_grid
+    # Extract that info and create variable that contains executable function
+    if ("likelihood_fn" in cur_grid_params)
+      likelihood_fn_str = cur_grid_params[:likelihood_fn]
+      if (occursin(".", likelihood_fn_str))
+        space, func = split(likelihood_fn_str, ".")
+        if space == "ADDM"
+          likelihood_fn = getfield(ADDM, Symbol(func))
+        else
+          error("Defining likelihood functions from modules outside of ADDM or Main is not currently supported.")
+        end
+      else
+        likelihood_fn = getfield(Main, Symbol(likelihood_fn_str))
+      end
+    end
+
     # Update the model with the current parameter combination
     if !(cur_grid_params isa Dict)
       for (k,v) in pairs(cur_grid_params) setproperty!(model, k, v) end
@@ -103,7 +122,7 @@ function grid_search(data, likelihood_fn, param_grid,
       end
 
     if return_model_posteriors
-        # TODo: Add param info to trial_likelihoods 
+        # TODo: Add param info to trial_likelihoods? 
         
         # Process trial likelihoods to compute model posteriors for each parameter combination
         nTrials = length(data)
@@ -113,10 +132,17 @@ function grid_search(data, likelihood_fn, param_grid,
           # Defined posteriors as a dictionary with the same keys as param_grid
           # to decrease change of misasigning probabilities to wrong models
           posteriors = Dict(zip(keys(param_grid), repeat([1/nModels], outer = nModels)))
+        else
+          posteriors = model_priors
         end
 
+        # Trialwise posterior updating
         for t in 1:nTrials
+
+          # Reset denominator p(data) for each trial
           denom = 0
+
+          # Update denominator summing
           for comb_key in keys(param_grid)
             denom += (posteriors[comb_key] * trial_likelihoods[comb_key][t])
           end

@@ -485,7 +485,7 @@ fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bi
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, nll_df, model_posteriors = ADDM.grid_search(my_sim_data, my_likelihood_fn, param_grid, 
+best_pars, nll_df, model_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);

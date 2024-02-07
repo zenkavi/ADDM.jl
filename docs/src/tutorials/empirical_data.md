@@ -41,7 +41,7 @@ best_pars = Dict()
 for k in keys(krajbich_data)
   cur_subj_data = krajbich_data[k]
   
-  subj_best_pars, subj_nll_df = ADDM.grid_search(cur_subj_data, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0))
+  subj_best_pars, subj_nll_df = ADDM.grid_search(cur_subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0))
 
   best_pars[k] = subj_best_pars
 

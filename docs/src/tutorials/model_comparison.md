@@ -30,7 +30,7 @@ my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
 
 subj_data = krajbich_data["18"];
   
-best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_trial_likelihood, param_grid, 
+best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
@@ -47,7 +47,8 @@ posteriors_df = DataFrame();
 for (k, v) in param_grid
   cur_row = DataFrame([v])
   cur_row.posterior = [model_posteriors[k]]
-  append!(posteriors_df, cur_row)
+  # append!(posteriors_df, cur_row)
+  all_nll_df = vcat(all_nll_df, row, cols=:union)
 end;
 ```
 
@@ -101,14 +102,16 @@ savefig("plot5.png"); nothing # hide
 ## Comparing different generative processes
 
 ```@repl 1
-fn = "../../../data/Krajbich_grid3.csv"
+# fn = "../../../data/Krajbich_grid3.csv"
+fn = "./data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood"
 param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
-fn = "../../../data/custom_model_grid.csv"
+# fn = "../../../data/custom_model_grid.csv"
+fn = "./data/custom_model_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
-tmp.likelihood_fn .= "my_likelihood_function"
+tmp.likelihood_fn .= "my_likelihood_fn"
 param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
 # Increase the indices of the second model's parameter combinations 
@@ -117,6 +120,25 @@ param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_grid2))
 
 param_grid = Dict(param_grid1..., param_grid2...)
+
+
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
+  
+# Haven't tested this part yet
+best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, nothing
+    Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
+    likelihood_args=my_likelihood_args, 
+    return_model_posteriors = true);
+
+posteriors_df = DataFrame();
+for (k, v) in param_grid
+  cur_row = DataFrame([v])
+  cur_row.posterior = [model_posteriors[k]]
+  # append!(posteriors_df, cur_row)
+  posteriors_df = vcat(posteriors_df, cur_row, cols=:union)
+end;
+
+
 ```
 
 

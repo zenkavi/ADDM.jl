@@ -69,7 +69,7 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     # If likelihood_fn is not defined as argument to the function 
     # it should be defined in the param_grid
     # Extract that info and create variable that contains executable function
-    if ("likelihood_fn" in cur_grid_params)
+    if (:likelihood_fn in keys(cur_grid_params))
       likelihood_fn_str = cur_grid_params[:likelihood_fn]
       if (occursin(".", likelihood_fn_str))
         space, func = split(likelihood_fn_str, ".")
@@ -118,7 +118,9 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       for (k, v) in param_grid
         row = DataFrame(Dict(pairs(v)))
         row.nll .= all_nll[k]
-        append!(all_nll_df, row)
+        # This won't work if different generative processes are part of param_grid
+        # append!(all_nll_df, row)
+        all_nll_df = vcat(all_nll_df, row, cols=:union)
       end
 
     if return_model_posteriors

@@ -108,6 +108,9 @@ tmp = DataFrame(CSV.File(fn, delim=","))
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood"
 param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
+# include("./my_likelihood_fn.jl")
+include("./docs/src/tutorials/my_likelihood_fn.jl")
+
 # fn = "../../../data/custom_model_grid.csv"
 fn = "./data/custom_model_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
@@ -121,11 +124,10 @@ param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_gri
 
 param_grid = Dict(param_grid1..., param_grid2...)
 
-
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
 # Haven't tested this part yet
-best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, nothing
+best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
@@ -138,6 +140,16 @@ for (k, v) in param_grid
   posteriors_df = vcat(posteriors_df, cur_row, cols=:union)
 end;
 
+sort(posteriors_df, :posterior, rev=true)
+
+model_names = unique(posteriors_df[:,:likelihood_fn])
+  
+out = Vector{}(undef, length(model_names))
+
+gdf = groupby(posteriors_df, :likelihood_fn);
+combdf = combine(gdf, :posterior => sum)
+
+@df combdf bar(:likelihood_fn, :posterior_sum, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
 ```
 

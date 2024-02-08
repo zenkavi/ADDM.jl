@@ -29,8 +29,8 @@ This should be of type `NamedTuple` with required field names (case sensitive): 
 using CSV
 using DataFrames
 
-# fn = "./data/stims.csv"
-fn = "../../../data/stims.csv"
+# fn = "./data/rawstims.csv"
+fn = "../../../data/rawstims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 ```

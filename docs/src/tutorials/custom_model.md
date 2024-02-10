@@ -13,7 +13,7 @@ Broadly, this involves defining three parts:
 3. trial likelihood calculator computing the probability of the observed choice and response time
     - this is then fed into `ADDM.grid_search` along with the data you want to compute the likelihoods for and the parameter search space.
 
-## Load package
+Let's begin with importing the packages we'll use in this tutorial.
 
 ```@repl 1
 using ADDM

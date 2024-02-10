@@ -204,3 +204,24 @@ savefig("plot6.png"); nothing # hide
 
 
 ## True vs. simulated data
+
+The comparison of the generative processes above strongly favors the 
+
+One way to inspect ...
+
+```
+rts = [i.RT * i.choice for i in subj_data] #left choice rt's are negative
+l = abs(minimum(rts)) > abs(maximum(rts)) ? abs(minimum(rts)) : abs(maximum(rts))
+
+histogram(rts, bins = range(-l, l, length=41))
+
+density(rts, bins = range(-l, l, length=41))
+
+rts_pos = [i.RT for i in subj_data if i.choice > 0]
+rts_neg = [i.RT * (-1) for i in subj_data if i.choice < 0]
+
+density(rts_pos, trim = true, legend = false)
+density!(rts_neg, trim = true, legend = false)
+
+
+```

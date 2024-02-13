@@ -1,3 +1,6 @@
+using Distributions
+using LinearAlgebra
+
 function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number = 10.0, 
                                    approxStateStep::Number = 0.1)
     

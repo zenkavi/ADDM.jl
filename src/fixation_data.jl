@@ -181,6 +181,10 @@ function process_fixations(data::Dict; timeStep::Number = 10,
     end
     probFixLeftFirst = countLeftFirst / countTotalTrials
     latencies = latenciesList
+    # if no transition duration is available in the data
+    if length(transitionsList) == 0
+      transitionsList = Number[0]
+    end
     transitions = transitionsList
     fixations = Dict()
 

@@ -19,6 +19,8 @@ using ADDM
 using CSV
 using DataFrames
 using DataFramesMeta
+using Distributions
+using LinearAlgebra
 using StatsPlots
 ```
 
@@ -62,8 +64,7 @@ posteriors_df = DataFrame();
 for (k, v) in param_grid
   cur_row = DataFrame([v])
   cur_row.posterior = [model_posteriors[k]]
-  # append!(posteriors_df, cur_row)
-  all_nll_df = vcat(all_nll_df, row, cols=:union)
+  posteriors_df = vcat(posteriors_df, cur_row, cols=:union)
 end;
 ```
 
@@ -129,24 +130,24 @@ The comparison of these two generative processes is operationalized by specifyin
 First we read in the file that defines the parameter space for the first model, the standard aDDM.
 
 ```@repl 1
-# fn = "../../../data/Krajbich_grid3.csv"
-fn = "./data/Krajbich_grid3.csv"
-tmp = DataFrame(CSV.File(fn, delim=","))
-tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood"
+fn = "../../../data/Krajbich_grid3.csv";
+# fn = "./data/Krajbich_grid3.csv"
+tmp = DataFrame(CSV.File(fn, delim=","));
+tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood";
 param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 ```
 
 Then we define the likelihood function for the second model along with the parameter space we will examine for this second model. Note also that we modify the indices of the specific parameter combinations for this second model to avoid over-writing the parameters from the first model.
 
 ```@repl 1
-# include("./my_likelihood_fn.jl")
-include("./docs/src/tutorials/my_likelihood_fn.jl")
+include("./my_likelihood_fn.jl")
+# include("./docs/src/tutorials/my_likelihood_fn.jl")
 
-# fn = "../../../data/custom_model_grid.csv"
-fn = "./data/custom_model_grid.csv"
-tmp = DataFrame(CSV.File(fn, delim=","))
-tmp.likelihood_fn .= "my_likelihood_fn"
-param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))))
+fn = "../../../data/custom_model_grid.csv";
+# fn = "./data/custom_model_grid.csv"
+tmp = DataFrame(CSV.File(fn, delim=","));
+tmp.likelihood_fn .= "my_likelihood_fn";
+param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))));
 
 # Increase the indices of the second model's parameter combinations 
 # This avoid overwriting the parameter combinations with the same index 
@@ -165,7 +166,6 @@ With this expanded `param_grid` that includes information on the different likel
 ```@repl 1
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
-# Haven't tested this part yet
 best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
@@ -210,18 +210,26 @@ The comparison of the generative processes above strongly favors the
 One way to inspect ...
 
 ```
+# Define the limit for the x-axis
 rts = [i.RT * i.choice for i in subj_data] #left choice rt's are negative
 l = abs(minimum(rts)) > abs(maximum(rts)) ? abs(minimum(rts)) : abs(maximum(rts))
 
-histogram(rts, bins = range(-l, l, length=41))
+# Split the RTs for left and right choice. Left is on the left side of the plot
+rts_pos = [i.RT for i in subj_data if i.choice > 0];
+rts_neg = [i.RT * (-1) for i in subj_data if i.choice < 0];
 
-density(rts, bins = range(-l, l, length=41))
+# Get best fitting parameters for standard model
 
-rts_pos = [i.RT for i in subj_data if i.choice > 0]
-rts_neg = [i.RT * (-1) for i in subj_data if i.choice < 0]
+# Get best fitting parameters for alternative model
 
-density(rts_pos, trim = true, legend = false)
-density!(rts_neg, trim = true, legend = false)
+# Simulate data using best parameters for both models
 
+# Plot true RT histograms overlaid with simulated RT histograms
+
+histogram(rts_pos, normalize=true, legend = false, bins = range(-l, l, length=41), fillcolor = "gray", yaxis = false, grid = false)
+# density!(rts_pos, legend = false, linewidth = 3, linecolor = "black")
+histogram!(rts_neg, normalize=true, legend = false, bins = range(-l, l, length=41), fillcolor = "gray")
+# density!(rts_neg, legend = false, linewidth = 3, linecolor = "black")
+vline!([0], linecolor = "red")
 
 ```

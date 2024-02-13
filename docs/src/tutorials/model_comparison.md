@@ -27,7 +27,7 @@ using StatsPlots
 Read in a subset of the data from Krajbich et al. (2010) that comes with the toolbox.
 
 ```@repl 1
-krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
+krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv");
 ```
 
 Run grid search for a single subject. This computes the negative log-likelihood (nll) for each parameter combination for a single subject. Moreover, here we introduce the `return_model_posteriors` argument when running `ADDM.grid_search`, which expands the output to include a `model_posteriors` dictionary. 
@@ -38,12 +38,11 @@ Run grid search for a single subject. This computes the negative log-likelihood 
 
 
 ```@repl 1
-# fn = "./data/Krajbich_grid.csv"
 fn = "../../../data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
 subj_data = krajbich_data["18"];
   
@@ -131,7 +130,6 @@ First we read in the file that defines the parameter space for the first model, 
 
 ```@repl 1
 fn = "../../../data/Krajbich_grid3.csv";
-# fn = "./data/Krajbich_grid3.csv"
 tmp = DataFrame(CSV.File(fn, delim=","));
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood";
 param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
@@ -141,10 +139,8 @@ Then we define the likelihood function for the second model along with the param
 
 ```@repl 1
 include("./my_likelihood_fn.jl")
-# include("./docs/src/tutorials/my_likelihood_fn.jl")
 
 fn = "../../../data/custom_model_grid.csv";
-# fn = "./data/custom_model_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","));
 tmp.likelihood_fn .= "my_likelihood_fn";
 param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))));
@@ -203,33 +199,85 @@ savefig("plot6.png"); nothing # hide
 ![plot](plot6.png)
 
 
-## True vs. simulated data
+## Comparing true data with simulated data
 
-The comparison of the generative processes above strongly favors the 
+The comparison of the generative processes above strongly favors the standard aDDM over the custom model in generating the observed data (within the ranges of the parameter space we explored).
 
-One way to inspect ...
+Another way to examine how well a model describes observed data is by comparing how well it predicts observed patterns. In this case, this would involve inspecting response time distributions conditional on choice as these are the two outputs of the generative models.
 
+One can choose different features and statistics about the observed data to compare with model predictions. Below, we plot how the response time distributions for the best fitting model from each generative process compares to the true data.  
+
+First, we get best fitting parameters for each model.
+
+```@repl 1
+bestModelPars = @chain posteriors_df begin
+    groupby(:likelihood_fn) 
+    combine(_) do sdf
+        sdf[argmax(sdf.posterior), :]
+    end
+  end
 ```
-# Define the limit for the x-axis
-rts = [i.RT * i.choice for i in subj_data] #left choice rt's are negative
+
+Using these parameters for each model we simulate data for the stimuli used in the true data.
+
+```@repl 1
+## Prepare inputs for simulator
+
+vDiffs = sort(unique([x.valueLeft - x.valueRight for x in subj_data]));
+fixData = ADDM.process_fixations(krajbich_data, fixDistType="fixation", valueDiffs = vDiffs);
+MyArgs = (timeStep = 10.0, cutOff = 20000, fixationData = fixData);
+MyStims = (valueLeft = [x.valueLeft for x in subj_data], valueRight = [x.valueRight for x in subj_data])
+
+## Define standard model with the best fitting parameters
+standPars = @rsubset bestModelPars :likelihood_fn == "ADDM.aDDM_get_trial_likelihood";
+standModel = ADDM.define_model(d = standPars.d[1], σ = standPars.sigma[1], θ = standPars.theta[1]);
+
+## Simulate data for the best standard model
+simStand = ADDM.simulate_data(standModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs);
+
+## Read in trial simulator function for alternative model
+include("./my_trial_simulator.jl")
+
+## Define standard model with the best fitting parameters
+altPars = @rsubset bestModelPars :likelihood_fn == "my_likelihood_fn";
+altModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, nonDecisionTime = 100, bias = 0.0)
+altModel.λ = .05
+
+## Simulate data for the best alternative model
+simAlt = ADDM.simulate_data(altModel, MyStims, my_trial_simulator, MyArgs);
+```
+
+Finally we extract and plot the response time data for the true and simulated data.
+
+```@repl 1
+# Plot true RT histograms overlaid with simulated RT histograms
+
+## Define the limit for the x-axis based on true data
+rts = [i.RT * i.choice for i in subj_data]; #left choice rt's are negative
 l = abs(minimum(rts)) > abs(maximum(rts)) ? abs(minimum(rts)) : abs(maximum(rts))
 
-# Split the RTs for left and right choice. Left is on the left side of the plot
+## Split the RTs for left and right choice. Left is on the left side of the plot
 rts_pos = [i.RT for i in subj_data if i.choice > 0];
 rts_neg = [i.RT * (-1) for i in subj_data if i.choice < 0];
 
-# Get best fitting parameters for standard model
+rts_pos_stand = [i.RT for i in simStand if i.choice > 0];
+rts_pos_alt = [i.RT for i in simAlt if i.choice > 0];
 
-# Get best fitting parameters for alternative model
+rts_neg_stand = [i.RT * (-1) for i in simStand if i.choice < 0];
+rts_neg_alt = [i.RT * (-1) for i in simAlt if i.choice < 0];
 
-# Simulate data using best parameters for both models
+## Make plot
 
-# Plot true RT histograms overlaid with simulated RT histograms
+histogram(rts_pos, normalize=true, bins = range(-l, l, length=41), fillcolor = "gray", yaxis = false, grid = false, label = "True data")
+density!(rts_pos_stand, label = "ADDM predictions", linewidth = 3, linecolor = "blue")
+density!(rts_pos_alt, label = "Custom model predictions", linewidth = 3, linecolor = "green")
 
-histogram(rts_pos, normalize=true, legend = false, bins = range(-l, l, length=41), fillcolor = "gray", yaxis = false, grid = false)
-# density!(rts_pos, legend = false, linewidth = 3, linecolor = "black")
-histogram!(rts_neg, normalize=true, legend = false, bins = range(-l, l, length=41), fillcolor = "gray")
-# density!(rts_neg, legend = false, linewidth = 3, linecolor = "black")
-vline!([0], linecolor = "red")
+histogram!(rts_neg, normalize=true, bins = range(-l, l, length=41), fillcolor = "gray", label = "")
+density!(rts_neg_stand, linewidth = 3, linecolor = "blue", label = "")
+density!(rts_neg_alt, linewidth = 3, linecolor = "green", label = "")
 
+vline!([0], linecolor = "red", label = "")
+
+savefig("plot7.png"); nothing # hide
 ```
+![plot](plot7.png)

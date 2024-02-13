@@ -4,7 +4,8 @@
 This plot type shows the posteriors for each parameter individually,
     as well as the posterior probabilities of pairwise combinations.  
 
-The input is an array of dataframes resulting from 
+The input is an array of dataframes resulting from `ADDM.marginal_posteriors`
+  with the third positional argument set to true.
 
 ```
 best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, ADDM.aDDM_get_trial_likelihood, param_grid, 

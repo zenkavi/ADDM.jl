@@ -7,6 +7,8 @@ rt, choice, item_left, item_right. Format expected for fixations file:
 parcode, trial, fix_item, fix_time.
 
 # Arguments
+
+## Positional
 - `expdataFileName`: String, name of experimental data file.
 - `fixationsFileName`: String, name of fixations file.
   - `parcode`: Subject identifier
@@ -15,11 +17,15 @@ parcode, trial, fix_item, fix_time.
   3 = latency.
   - `fix_time`: Fixation duration.
 
+## Keyword
+- `stimsOnly`: Boolean, true if `expdataFileName` contains only stimuli info and
+  no choice or rt info.
+  
 # Return
   A dict, indexed by subjectId, where each entry is a list of Trial
       objects.
 """
-function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
+function load_data_from_csv(expdataFileName, fixationsFileName = nothing; stimsOnly = false)
     
     # Load experimental data from CSV file.
     try 
@@ -31,9 +37,17 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
     
     df = DataFrame(CSV.File(expdataFileName, delim=","))
     
-    if (!("parcode" in names(df)) || !("trial" in names(df)) || !("rt" in names(df)) || !("choice" in names(df))
+    if stimsOnly
+      if (!("parcode" in names(df)) || !("trial" in names(df)) || !("item_left" in names(df)) || !("item_right" in names(df)))
+        throw(error("Missing field in stims data file. Fields required: parcode, trial, item_left, item_right"))
+      end
+      cols = [:trial, :item_left, :item_right]
+    else
+      if (!("parcode" in names(df)) || !("trial" in names(df)) || !("rt" in names(df)) || !("choice" in names(df))
         || !("item_left" in names(df)) || !("item_right" in names(df)))
         throw(error("Missing field in experimental data file. Fields required: parcode, trial, rt, choice, item_left, item_right"))
+      end
+      cols = [:trial, :rt, :choice, :item_left, :item_right]
     end
     
     # Organize csv that was read in into a dictionary indexed by subject id's
@@ -41,15 +55,19 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
     subjectIds = unique(df.parcode)
     for subjectId in subjectIds
         data[subjectId] = Trial[]
-        parcode_df = df[df.parcode .== subjectId, [:trial, :rt, :choice, :item_left, :item_right]]
+        parcode_df = df[df.parcode .== subjectId, cols]
         trialIds = unique(parcode_df.trial) 
         for trialId in trialIds
-            trial_df = parcode_df[parcode_df.trial .== trialId, [:rt, :choice, :item_left, :item_right]]
+            trial_df = parcode_df[parcode_df.trial .== trialId, cols]
             itemLeft = trial_df.item_left[1]
             itemRight = trial_df.item_right[1]
-            push!(data[subjectId], Trial(choice = trial_df.choice[1], RT = trial_df.rt[1], valueLeft = itemLeft, valueRight = itemRight) ) 
+            if stimsOnly
+              push!(data[subjectId], Trial(choice = NaN, RT = NaN, valueLeft = itemLeft, valueRight = itemRight) ) 
+            else
+              push!(data[subjectId], Trial(choice = trial_df.choice[1], RT = trial_df.rt[1], valueLeft = itemLeft, valueRight = itemRight) ) 
             end
         end
+    end
     
     # Load fixation data from CSV file if specified.
     if fixationsFileName != nothing
@@ -59,9 +77,7 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing)
           print("Error while reading fixations file " * fixationsFileName)
           return nothing
       end
-    
-      # df = DataFrame(CSV.File(fixationsFileName, delim=","))
-    
+        
       if (!("parcode" in names(df)) || !("trial" in names(df)) || !("fix_item" in names(df)) || !("fix_time" in names(df)))
           throw(error("Missing field in fixations file. Fields required: parcode, trial, fix_item, fix_time"))
       end

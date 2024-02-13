@@ -29,8 +29,8 @@ This should be of type `NamedTuple` with required field names (case sensitive): 
 using CSV
 using DataFrames
 
-# fn = "./data/stims.csv"
-fn = "../../../data/stims.csv"
+# fn = "./data/rawstims.csv"
+fn = "../../../data/rawstims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 ```
@@ -105,7 +105,7 @@ fn = "../../../data/addm_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
-best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0))
+best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0))
 ```
 
 Examine the sum of negative log likelihoods for each parameter combination.
@@ -132,7 +132,7 @@ The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. L
 ```@repl 1
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, all_nll_df = ADDM.grid_search(SimData, ADDM.aDDM_get_trial_likelihood, param_grid, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args)
+best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args)
 
 sort!(all_nll_df, [:nll])
 ```

@@ -46,10 +46,13 @@ my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
 subj_data = krajbich_data["18"];
   
-best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
+
+nTrials = length(subj_data)
+model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
 
 ```
 
@@ -115,6 +118,18 @@ ADDM.margpostplot(marginal_posteriors)
 savefig("plot5.png"); nothing # hide
 ```
 ![plot](plot5.png)
+
+#### Trialwise changes to the parameter posteriors
+
+```
+for i in 1:nTrials
+  cur_trial_posteriors = Dict(zip(keys(trial_posteriors), [x[i] for x in values(trial_posteriors)]))
+  cur_param_posteriors = ADDM.marginal_posteriors(param_grid, cur_trial_posteriors)
+  # wrangle this to be a single df and add trial number info
+
+end
+
+```
 
 ## Comparing different generative processes
 

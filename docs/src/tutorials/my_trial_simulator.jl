@@ -1,3 +1,5 @@
+using ADDM
+
 function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData, 
                         valueLeft::Number, valueRight::Number, 
                         timeStep::Number=10.0, numFixDists::Int64=3, cutOff::Number=100000)
@@ -42,7 +44,7 @@ function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData,
             trialTime += t * timeStep
             RT = trialTime
             uninterruptedLastFixTime = latency
-            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            trial = ADDM.Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
             trial.fixItem = fixItem 
             trial.fixTime = fixTime 
             trial.fixRDV = fixRDV

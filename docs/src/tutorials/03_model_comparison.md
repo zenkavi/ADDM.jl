@@ -46,10 +46,13 @@ my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
 subj_data = krajbich_data["18"];
   
-best_pars, nll_df, model_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
+
+nTrials = length(subj_data)
+model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
 
 ```
 
@@ -80,9 +83,36 @@ plot_df = @chain posteriors_df begin
 
 @df plot_df bar(:x_label, :posterior, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
-savefig("plot3.png"); nothing # hide
+savefig("plot_3_1.png"); nothing # hide
 ```
-![plot](plot3.png)
+![plot](plot_3_1.png)
+
+#### Trialwise changes to the model posteriors
+
+```@repl 1
+trial_model_posteriors = DataFrame();
+for i in 1:nTrials
+  # Get the posterior for each model after the curent trial
+  cur_trial_posteriors = Dict(zip(keys(trial_posteriors), [x[i] for x in values(trial_posteriors)]))
+  cur_trial_posteriors = DataFrame(model_num = collect(keys(cur_trial_posteriors)), posterior = collect(values(cur_trial_posteriors)))
+  cur_trial_posteriors[!, :trial_num] .= i
+  trial_model_posteriors = vcat(trial_model_posteriors, cur_trial_posteriors, cols=:union)
+end
+```
+
+Plot changes to posteriors of each model across trials
+
+```@repl 1
+@df trial_model_posteriors plot(
+      :trial_num,
+      :posterior,
+      group = :model_num,
+      xlabel = "Trial",
+      ylabel = "Posterior p",
+      legend = false
+  )
+```
+
 
 ### Parameter posteriors
 
@@ -99,9 +129,9 @@ for plot_df in param_posteriors
 end
 plot(plot_array...) 
 
-savefig("plot4.png"); nothing # hide
+savefig("plot_3_2.png"); nothing # hide
 ```
-![plot](plot4.png)
+![plot](plot_3_2.png)
 
 We can also use the `ADDM.marginal_posteriors` function to compute parameter posteriors with respect to each other by specifying the third positional argument. When set to `true`, the `ADDM.marginal_posteriors` function returns pairwise marginal distributions that can be plotted as heatmaps to visualize conditional distributions of the parameters.   
 
@@ -112,9 +142,66 @@ marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, tru
 
 ADDM.margpostplot(marginal_posteriors)
 
-savefig("plot5.png"); nothing # hide
+savefig("plot_3_3.png"); nothing # hide
 ```
-![plot](plot5.png)
+![plot](plot_3_3.png)
+
+#### Trialwise changes to the parameter posteriors
+
+```@repl 1
+trial_param_posteriors = DataFrame();
+for i in 1:nTrials
+  # Get the posterior for each model after the curent trial
+  cur_trial_posteriors = Dict(zip(keys(trial_posteriors), [x[i] for x in values(trial_posteriors)]))
+
+  # Use built-in function to marginalize for each parameter
+  cur_param_posteriors = ADDM.marginal_posteriors(param_grid, cur_trial_posteriors)
+
+  # Wrangle the output to be a single df and add trial number info
+  for j in 1:length(cur_param_posteriors)
+    df = cur_param_posteriors[j][:,:] #assign a copy
+    
+    df[!, :par_name] .= names(df)[1]
+    df[!, :trial_num] .= i
+    rename!(df, Symbol(names(df)[1]) => :par_value)
+
+    trial_param_posteriors = vcat(trial_param_posteriors, df, cols=:union)
+
+  end
+
+end
+```
+
+Plot trialwise marginal posteriors for each parameter
+
+```@repl 1
+par_names = unique(trial_param_posteriors[:,:par_name])
+
+plot_array = Any[]
+
+for cur_par_name in par_names
+
+  plot_df = @rsubset(trial_param_posteriors, :par_name == cur_par_name)
+
+  cur_plot = @df plot_df plot(
+      :trial_num,
+      :posterior_sum,
+      group = :par_value,
+      title = cur_par_name,
+      xlabel = "Trial",
+      ylabel = "Posterior p",
+  )
+
+  push!(plot_array, cur_plot)
+
+end
+
+plot(plot_array...)
+
+savefig("plot_3_4.png"); nothing # hide
+```
+![plot](plot_3_4.png)
+
 
 ## Comparing different generative processes
 
@@ -194,9 +281,9 @@ combdf = combine(gdf, :posterior => sum)
 
 @df combdf bar(:likelihood_fn, :posterior_sum, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
-savefig("plot6.png"); nothing # hide
+savefig("plot_3_5.png"); nothing # hide
 ```
-![plot](plot6.png)
+![plot](plot_3_5.png)
 
 
 ## Comparing true data with simulated data
@@ -278,6 +365,6 @@ density!(rts_neg_alt, linewidth = 3, linecolor = "green", label = "")
 
 vline!([0], linecolor = "red", label = "")
 
-savefig("plot7.png"); nothing # hide
+savefig("plot_3_6.png"); nothing # hide
 ```
-![plot](plot7.png)
+![plot](plot_3_6.png)

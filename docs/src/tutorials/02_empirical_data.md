@@ -68,6 +68,6 @@ N = length(colnames)
 
 @df wide_nll_df histogram(cols(1:N); layout=grid(2,5), legend=false, title=permutedims(colnames), frame=:box, titlefontsize=11, c=:blues, bins = 20, size=(1800,1000), xrotation = 45)
 
-savefig("plot1.png"); nothing # hide
+savefig("plot_2_1.png"); nothing # hide
 ```
-![plot](plot1.png)
+![plot](plot_2_1.png)

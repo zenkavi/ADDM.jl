@@ -91,9 +91,12 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     end
     
     # Make sure param names are converted to Greek symbols
+    # ADDM.convert_param_symbols(model)
     convert_param_symbols(model)
 
     if return_model_posteriors
+      # all_nll[k], trial_likelihoods[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
+      #                         return_trial_likelihoods = true)
       all_nll[k], trial_likelihoods[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                               return_trial_likelihoods = true)
 
@@ -118,11 +121,13 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       for (k, v) in param_grid
         row = DataFrame(Dict(pairs(v)))
         row.nll .= all_nll[k]
-        # This won't work if different generative processes are part of param_grid
+        # Appending won't work when different generative processes are part of param_grid
         # append!(all_nll_df, row)
+        # vcat avoids that and can bind rows with different columns
         all_nll_df = vcat(all_nll_df, row, cols=:union)
       end
-
+    
+    # Why is this conditional on return_grid_nlls?
     if return_model_posteriors
         # TODo: Add param info to trial_likelihoods? 
         
@@ -130,12 +135,12 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
         nTrials = length(data)
         nModels = length(param_grid)
 
-        if isnothing(model_priors)
-          # Defined posteriors as a dictionary with the same keys as param_grid
-          # to decrease change of misasigning probabilities to wrong models
-          posteriors = Dict(zip(keys(param_grid), repeat([1/nModels], outer = nModels)))
-        else
-          posteriors = model_priors
+        # Define posteriors as a dictionary with the same keys as param_grid
+        # Initialize the first posteriors as a float at 0 (value doesn't matter)
+        posteriors = Dict(zip(keys(param_grid), repeat([[0.0]], outer = nModels)))
+
+        if isnothing(model_priors)          
+          model_priors = Dict(zip(keys(param_grid), repeat([1/nModels], outer = nModels)))
         end
 
         # Trialwise posterior updating
@@ -146,13 +151,28 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
 
           # Update denominator summing
           for comb_key in keys(param_grid)
-            denom += (posteriors[comb_key] * trial_likelihoods[comb_key][t])
+            if t == 1
+              # Changed the initial posteriors so use model_priors for first trial
+              denom += (model_priors[comb_key] * trial_likelihoods[comb_key][t])
+            else
+              denom += (posteriors[comb_key][t-1] * trial_likelihoods[comb_key][t])
+            end
           end
 
           # Calculate the posteriors after this trial.
           for comb_key in keys(param_grid)
-            prior = posteriors[comb_key]
-            posteriors[comb_key] = (trial_likelihoods[comb_key][t] * prior / denom)
+            if t == 1
+              prior = model_priors[comb_key]
+              # Assigning values to arrays in dictionaries is strange
+              # This changes the first value that was initialized at 0.0 to the updated posterior
+              # After trial 1
+              posteriors[comb_key] = [(trial_likelihoods[comb_key][t] * prior / denom)]
+            else
+              prior = posteriors[comb_key][t-1]
+              # After changing the first value we can now add the updated posteriors for the 
+              # following trials
+              append!(posteriors[comb_key],[(trial_likelihoods[comb_key][t] * prior / denom)])
+            end
           end
         end
 
@@ -165,3 +185,11 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   end
 
 end
+
+# Check each value in the posteriors adds up to 1 after each trial update
+# for i in 1:length(posteriors)
+#   println(sum([x[i] for x in values(posteriors)]))
+# end
+
+# # Get only the last value in posteriors
+# [x[nTrials] for x in values(posteriors)]

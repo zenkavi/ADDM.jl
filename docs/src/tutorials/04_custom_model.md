@@ -123,16 +123,6 @@ Simuluate one set of data with the stimuli.
 my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args);
 ```
 
-Add more data?
-
-```
-for i in 1:2
-  this_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args)
-  append!(my_sim_data, this_sim_data)
-  i += 1
-end;
-```
-
 ```@repl 1
 length(my_sim_data)
 ```
@@ -191,10 +181,13 @@ fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bi
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, nll_df, model_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
+best_pars, nll_df, trial_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
+
+nTrials = length(my_sim_data)
+model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
 ```
 
 The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
@@ -212,6 +205,6 @@ marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, tru
 
 ADDM.margpostplot(marginal_posteriors)
 
-savefig("plot2.png"); nothing # hide
+savefig("plot_4_1.png"); nothing # hide
 ```
-![plot](plot2.png)
+![plot](plot_4_1.png)

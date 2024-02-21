@@ -15,7 +15,7 @@ Broadly, this involves defining three parts:
 
 Let's begin with importing the packages we'll use in this tutorial.
 
-```@repl 1
+```@repl 4
 using ADDM
 using CSV
 using DataFrames
@@ -30,7 +30,7 @@ The built-in model has a `decay` parameter for a linear decay of the `barrier`. 
 
 Based on the [built-in trial simulators as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/simulate_data.jl#L39) the trial simulator would look like [this]((https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/docs/src/tutorials/my_trial_simulator.jl)). The custom model trial simulator is identical to the built-in simulators except for where the barriers for the accummulation process is defined:
 
-```@repl 1
+```@repl 4
 include("my_trial_simulator.jl"); nothing # hide
 ```
 
@@ -63,11 +63,11 @@ end
 
 Now create a model object of class `aDDM` to store the parameters of our model. There are two ways of doing this. First, we could use the `ADDM.define_model` function. That would like:
 
-```@repl 1
+```@repl 4
 my_model = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, nonDecisionTime = 100, bias = 0.0)
 ```
 
-```@repl 1
+```@repl 4
 my_model.λ = .05
 ```
 
@@ -113,25 +113,25 @@ my_fixations = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs =
 #### Simulate choice and response times
 
 
-```@repl 1
+```@repl 4
 my_args = (timeStep = 10.0, cutOff = 20000, fixationData = my_fixations);
 ```
 
 Simuluate one set of data with the stimuli.
 
-```@repl 1
+```@repl 4
 my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args);
 ```
 
-```@repl 1
+```@repl 4
 length(my_sim_data)
 ```
 
 ## Define likelihood function
 
-Based on the [built-in likelihood function as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/compute_likelihood.jl#L17) the custom likelihod function would look like [this]((https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/docs/src/tutorials/my_likelihood_fn.jl)). The custom likelihood function is identical to the built-in function except for where the barriers for the accummulation process is defined:
+Based on the [built-in likelihood function as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/compute_likelihood.jl#L17) the custom likelihod function would look like [this](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/docs/src/tutorials/my_likelihood_fn.jl). The custom likelihood function is identical to the built-in function except for where the barriers for the accummulation process is defined:
 
-```@repl 1
+```@repl 4
 include("my_likelihood_fn.jl"); nothing # hide
 ```
 
@@ -168,7 +168,7 @@ end
 
 #### Define search grid
 
-```@repl 1
+```@repl 4
 fn = "../../../data/custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
@@ -176,23 +176,23 @@ param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
 
 #### Run grid search on simulated data
 
-```@repl 1
+```@repl 4
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0)
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1)
 
 best_pars, nll_df, trial_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
 
-nTrials = length(my_sim_data)
-model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
+nTrials = length(my_sim_data);
+model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]));
 ```
 
 The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
 
-```@repl 1
+```@repl 4
 sort!(nll_df, [:nll])
 
 show(nll_df, allrows = true)
@@ -200,7 +200,7 @@ show(nll_df, allrows = true)
 
 The posteriors have no uncertainty either.
 
-```@repl 1
+```@repl 4
 marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 
 ADDM.margpostplot(marginal_posteriors)

@@ -2,7 +2,7 @@
 
 ## Load packages
 
-```@repl 1
+```@repl 2
 using ADDM
 using CSV
 using DataFrames
@@ -22,7 +22,7 @@ ADDM.Trial(1, 1474.0, -5, 5, Number[3, 0, 1, 0, 2, 0], Number[270.0, 42.0, 246.0
 where the first element is choice (-1 for left, +1 for right), second element is response time in ms, third is value of left option, fourth is value of right option. Fixation data is specified in the fourth and fifth elements as fixation location (1 for left, 2 for right) and fixation duration (in ms) respectively.  
 
 
-```@repl 1
+```@repl 2
 krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
 ```
 
@@ -30,7 +30,7 @@ krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv
 
 Using a grid of 64 parameter combinations with `d` in {0.0001, 0.00015, 0.0002, 0.00025}, `μ` in {80, 100, 120, 140}, `θ` in {0.3, 0.5, 0.7, 0.9}  and `σ = d*μ`   
 
-```@repl 1
+```@repl 2
 fn = "../../../data/Krajbich_grid.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
@@ -51,15 +51,15 @@ for k in keys(krajbich_data)
 end
 ```
 
-To view best parameter estimates for each subject
+To view best parameter estimates for each subject we can look at the `best_pars` data frame, to which the output of `ADDM.grid_search` was pushed for each subject.
 
-```@repl 1
+```@repl 2
 best_pars
 ```
 
 Plot variability in the negative log likelihoods for each parameter combination for each subject
 
-```@repl 1
+```@repl 2
 wide_nll_df = unstack(all_nll_df, :parcode, :nll)
 select!(wide_nll_df, Not([:d, :sigma, :theta]))
 colnames = names(wide_nll_df)

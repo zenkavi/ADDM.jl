@@ -419,7 +419,7 @@ include("./my_trial_simulator.jl")
 
 Now we can define the alternative model with the best fitting parameters for that model and simulate data.
 
-```
+```@repl 3
 ## Define standard model with the best fitting parameters
 altPars = @rsubset bestModelPars :likelihood_fn == "my_likelihood_fn";
 altModel = ADDM.define_model(d = altPars.d[1], σ = altPars.sigma[1], θ = altPars.theta[1])

@@ -328,7 +328,7 @@ savefig("plot_3_6.png"); nothing # hide
 
 We can check whether this conclusion changed with more trials
 
-```repl 3
+```@repl 3
 # Initialize empty df
 trial_model_posteriors = DataFrame();
 model_info = DataFrame(model_num = [x for x in keys(param_grid)], likelihood_fn = [x.likelihood_fn for x in values(param_grid)]);

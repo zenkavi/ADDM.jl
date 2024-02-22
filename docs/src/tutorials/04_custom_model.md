@@ -208,7 +208,7 @@ savefig("plot_4_1.png"); nothing # hide
 
 How do the posteriors change across trials?
 
-```
+```@repl 4
 trial_param_posteriors = DataFrame();
 
 for i in 1:nTrials

@@ -4,7 +4,7 @@ The parameter combination that has the highest likelihood to have generated a gi
 
 When estimating the best-fitting parameters for a model (aDDM or otherwise) our ability to recover them is *always* limited to the parameter space we explore. Therefore, any computation of the uncertainty associated with specific parameters values is only with respect to other values that we have tried.
 
-In other words, the uncertainty is not some divine measure that accounts for all possible models. It is a comparative measure that tells us how much better a specific combination of parameters is compared to other combinations in the parameter space we have defined. In this toolbox, we make the parameter space explicit by specifying the grid in the `ADDM.grid_search` function. 
+In other words, the uncertainty is not some divine measure that accounts for all possible models. It is a comparative measure that tells us how much better a specific combination of parameters is, compared to other combinations in the parameter space we have defined. In this toolbox, we make the parameter space explicit by specifying the grid (`param_grid`) in the `ADDM.grid_search` function. 
 
 The uncertainty associated with each parameter value and/or parameter combination is quantified as a probability distribution. Specifically, a posterior probability distribution that reflects both the prior beliefs on how likely each parameter value is and how much to update them based on the evidence each trial provides in favor of a parameter combination.
 
@@ -17,13 +17,7 @@ In this section we will demonstrate how to compute posterior probabilities assoc
 We begin with importing the packages that will be used in this tutorial.
 
 ```@repl 3
-using ADDM
-using CSV
-using DataFrames
-using DataFramesMeta
-using Distributions
-using LinearAlgebra
-using StatsPlots
+using ADDM, CSV, DataFrames, DataFramesMeta, Distributions, LinearAlgebra, StatsPlots
 ```
 
 The toolbox comes with a subset of the data from Krajbich et al. (2010). In this tutorials we will use data from a single subject from this dataset.
@@ -38,9 +32,9 @@ To examine the uncertainty associated with each parameter and their combinations
 
 
 ```@repl 3
-fn = "../../../data/Krajbich_grid3.csv"
-tmp = DataFrame(CSV.File(fn, delim=","))
-param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
+fn = "../../../data/Krajbich_grid3.csv";
+tmp = DataFrame(CSV.File(fn, delim=","));
+param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))));
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
@@ -49,7 +43,7 @@ best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, AD
     likelihood_args=my_likelihood_args, 
     return_model_posteriors = true);
 
-nTrials = length(subj_data)
+nTrials = length(subj_data);
 model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
 ```
 
@@ -95,7 +89,7 @@ savefig("plot_3_1.png"); nothing # hide
 
 #### Trialwise changes to the model posteriors
 
-The `ADDM.grid_search` function's `return_model_posteriors` argument returns the discretized posterior distribution for each model after each *trial*. This allows us to examine how the posterior distribution changes accounting for increasing amounts of data.
+The `ADDM.grid_search` function's `return_model_posteriors` argument returns the discretized posterior distribution for each model after each *trial/observation*. This allows us to examine how the posterior distribution changes accounting for increasing amounts of data.
 
 To do so, first we rangle the `trial_posteiriors` into a data frame for easier visualization.
 
@@ -117,7 +111,7 @@ for i in 1:nTrials
 end;
 ```
 
-Then, plot changes to posteriors of each model across trials. Note, we have omitted a legend indicating the parameters associated with each line in the plot below to avoid over crowding the plot. This is meant only as an intial exploration into how the conclusions about the best model vary with increased evidence from each trial.
+Then, plot changes to posteriors of each model across trials. Note, we have omitted a legend indicating the parameters associated with each line in the plot below to avoid over-crowding the plot. This is meant only as an intial exploration into how the conclusions about the best model vary with increased evidence from each trial.
 
 ```@repl 3
 @df trial_model_posteriors plot(
@@ -142,12 +136,12 @@ As described above the `model_posteriors` dictionary contains the probability di
 ```@repl 3
 param_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors)
 
-plot_array = Any[]
+plot_array = Any[];
 for plot_df in param_posteriors
   x_lab = names(plot_df)[1]
   cur_plot = @df plot_df bar(plot_df[:, x_lab], :posterior_sum, leg = false, ylabel = "p(" * x_lab * " = x|data)", xlabel = x_lab )
   push!(plot_array, cur_plot) 
-end
+end;
 plot(plot_array...) 
 
 savefig("plot_3_3.png"); nothing # hide
@@ -205,9 +199,9 @@ end
 Plot trialwise marginal posteriors for each parameter
 
 ```@repl 3
-par_names = unique(trial_param_posteriors[:,:par_name])
+par_names = unique(trial_param_posteriors[:,:par_name]);
 
-plot_array = Any[]
+plot_array = Any[];
 
 for cur_par_name in par_names
 
@@ -266,7 +260,7 @@ param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))));
 # This avoid overwriting the parameter combinations with the same index 
 # in the first parameter grid
 
-param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_grid2))
+param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_grid2));
 ```
 
 Now that we have defined the parameter space for both models, we combine them both in a single `param_grid`, over which we'll compute the posterior distribution.
@@ -278,6 +272,8 @@ param_grid = Dict(param_grid1..., param_grid2...)
 With this expanded `param_grid` that includes information on the different likelihood functions we call the `ADDM.grid_search` function setting the third position argument to `nothing`. This argument is where we define the likelihood function in the case of a single model but now this is specified in the `param_grid`.
 
 ```@repl 3
+include("./my_likelihood_fn.jl"); nothing # hide
+
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
 best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,

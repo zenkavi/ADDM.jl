@@ -44,7 +44,8 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
                     return_grid_nlls = true,
                     likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
                     return_model_posteriors = false,
-                    model_priors = nothing)
+                    model_priors = nothing,
+                    likelihood_fn_module = Main)
 
   n = length(param_grid) # number of parameter combinations specified in param_grid
   # all_nll = Vector{}(undef, n)
@@ -74,13 +75,8 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       if (occursin(".", likelihood_fn_str))
         space, func = split(likelihood_fn_str, ".")
         likelihood_fn = getfield(getfield(Main, Symbol(space)), Symbol(func))
-        # if space == "ADDM"
-        #   likelihood_fn = getfield(ADDM, Symbol(func))
-        # else
-        #   error("Defining likelihood functions from modules outside of ADDM or Main is not currently supported.")
-        # end
       else
-        likelihood_fn = getfield(Main, Symbol(likelihood_fn_str))
+        likelihood_fn = getfield(likelihood_fn_module, Symbol(likelihood_fn_str))
       end
     end
 

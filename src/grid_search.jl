@@ -73,11 +73,12 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       likelihood_fn_str = cur_grid_params[:likelihood_fn]
       if (occursin(".", likelihood_fn_str))
         space, func = split(likelihood_fn_str, ".")
-        if space == "ADDM"
-          likelihood_fn = getfield(ADDM, Symbol(func))
-        else
-          error("Defining likelihood functions from modules outside of ADDM or Main is not currently supported.")
-        end
+        likelihood_fn = getfield(getfield(Main, Symbol(space)), Symbol(func))
+        # if space == "ADDM"
+        #   likelihood_fn = getfield(ADDM, Symbol(func))
+        # else
+        #   error("Defining likelihood functions from modules outside of ADDM or Main is not currently supported.")
+        # end
       else
         likelihood_fn = getfield(Main, Symbol(likelihood_fn_str))
       end

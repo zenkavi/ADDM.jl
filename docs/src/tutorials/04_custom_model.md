@@ -16,12 +16,7 @@ Broadly, this involves defining three parts:
 Let's begin with importing the packages we'll use in this tutorial.
 
 ```@repl 4
-using ADDM
-using CSV
-using DataFrames
-using Distributions
-using LinearAlgebra
-using StatsPlots
+using ADDM, CSV, DataFrames, Distributions, LinearAlgebra, StatsPlots
 ```
 
 ## Define simulator
@@ -93,20 +88,20 @@ Now that we have defined the generative process (the simulator function) and the
 
 We will use data from Tavares et al. (2017) that [comes with the toolbox](https://github.com/aDDM-Toolbox/ADDM.jl/tree/main/data). Importantly, we will *only* be using the stimuli and fixations from this dataset, *not* the empirical choice and response times. This is ensured by the `stimsOnly` argument of the `ADDM.load_data_from_csv` function. By using the stimuli and the fixations to sample from, we will generate choice and response using our custom simulator function. 
 
-```
+```@repl 4
 data = ADDM.load_data_from_csv("../../../data/stimdata.csv", "../../../data/fixations.csv"; stimsOnly = true);
 ```
 
 Extract stimulus values from this dataset and wrangle into the format expected by the simulator function.
 
-```
+```@repl 4
 nTrials = 2400;
 my_stims = (valueLeft = reduce(vcat, [[i.valueLeft for i in data[j]] for j in keys(data)])[1:nTrials], valueRight = reduce(vcat, [[i.valueRight for i in data[j]] for j in keys(data)])[1:nTrials]);
 ```
 
 Aggregate fixations from all subjects to create fixation duration distributions indexed by value difference and order (1st, 2nd etc.). Since the fixations will be indexed by the value difference, this is extracted from the stimuli and used as an input to the `ADDM.process_fixations` function. The simulator function will sample from this aggregate data.
 
-```
+```@repl 4
 vDiffs = sort(unique(reduce(vcat, [[i.valueLeft - i.valueRight for i in data[j]] for j in keys(data)])));
 
 my_fixations = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs = vDiffs);
@@ -174,9 +169,9 @@ param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))));
 #### Run grid search on simulated data
 
 ```@repl 4
-fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0)
+fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1)
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
 best_pars, nll_df, trial_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
@@ -190,7 +185,7 @@ model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(
 The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
 
 ```@repl 4
-sort!(nll_df, [:nll])
+sort!(nll_df, [:nll]);
 
 show(nll_df, allrows = true)
 ```
@@ -198,7 +193,7 @@ show(nll_df, allrows = true)
 The posteriors have no uncertainty either.
 
 ```@repl 4
-marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
+marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true);
 
 ADDM.margpostplot(marginal_posteriors)
 
@@ -231,11 +226,11 @@ for i in 1:nTrials
 
   end
 
-end
+end;
 
-par_names = unique(trial_param_posteriors[:,:par_name])
+par_names = unique(trial_param_posteriors[:,:par_name]);
 
-plot_array = Any[]
+plot_array = Any[];
 
 for cur_par_name in par_names
 
@@ -252,7 +247,7 @@ for cur_par_name in par_names
 
   push!(plot_array, cur_plot)
 
-end
+end;
 
 plot(plot_array...)
 

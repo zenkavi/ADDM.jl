@@ -249,7 +249,7 @@ param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 Then we define the likelihood function for the second model along with the parameter space we will examine for this second model. Note also that we modify the indices of the specific parameter combinations for this second model to avoid over-writing the parameters from the first model.
 
 ```@repl 3
-include("./my_likelihood_fn.jl")
+include("my_likelihood_fn.jl"); nothing # hide
 
 fn = "../../../data/custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
@@ -272,8 +272,6 @@ param_grid = Dict(param_grid1..., param_grid2...)
 With this expanded `param_grid` that includes information on the different likelihood functions we call the `ADDM.grid_search` function setting the third position argument to `nothing`. This argument is where we define the likelihood function in the case of a single model but now this is specified in the `param_grid`.
 
 ```@repl 3
-include("./my_likelihood_fn.jl"); nothing # hide
-
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
 best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,

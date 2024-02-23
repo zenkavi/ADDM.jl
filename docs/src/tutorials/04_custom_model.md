@@ -16,7 +16,7 @@ Broadly, this involves defining three parts:
 Let's begin with importing the packages we'll use in this tutorial.
 
 ```@repl 4
-using ADDM, CSV, DataFrames, Distributions, LinearAlgebra, StatsPlots
+using ADDM, CSV, DataFrames, DataFramesMeta, Distributions, LinearAlgebra, StatsPlots
 ```
 
 ## Define simulator

@@ -64,7 +64,7 @@ julia --project -e 'import Pkg; Pkg.instantiate()'
 - Start up a Julia REPL using the project's environment
 
 ```
-julia --project
+julia --project={path_to}/ADDM.jl
 ```
 
 ### Once `ADDM.jl` is on the Julia Registry

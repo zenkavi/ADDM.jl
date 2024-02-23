@@ -68,7 +68,7 @@ Random.seed!(38535)
 MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 ```
 
-### Define fixationData
+### Define fixation data
 
 The last ingredient to simulate data is fixation patterns. These are necessary because the distinguishing feature of the aDDM is its ability to use eyetracking data to account for attentional biases in choice behavior.
 
@@ -100,18 +100,6 @@ Note that these are *positional* arguments for code efficiency.
 SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs);
 ```
 
-Data can also be simulated from [probability distributions of fixation data](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#ADDM.convert_to_fixationDist).
-
-```
-MyFixationDist, MyTimeBins = ADDM.convert_to_fixationDist(MyFixationData)
-
-MyBlankFixationData = ADDM.FixationData(MyFixationData.probFixLeftFirst, MyFixationData.latencies, MyFixationData.transitions, Dict())
-
-MyArgs = (fixationData = MyBlankFixationData, fixationDist = MyFixationDist, timeBins = MyTimeBins)
-
-SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
-```
-
 ### Recover parameters using a grid search
 
 Now that we have simulated data with known parameters we can use the likelihood function to invert the model and recover those parameters from the data.
@@ -130,7 +118,7 @@ Having defined the parameter space we can compute the likelihood of the data for
 best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0));
 ```
 
-Examine the sum of negative log likelihoods for each parameter combination.
+Below we display the sum of negative log likelihoods for each parameter combination.
 
 ```@repl 1
 sort!(all_nll_df, [:nll])
@@ -152,7 +140,9 @@ The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. L
 ```@repl 1
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args)
+best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args);
 
 sort!(all_nll_df, [:nll])
 ```
+
+Success! Reducing the state step size was sufficient to recover the true parameter combination for the simulated dataset.

@@ -16,13 +16,13 @@ In this section we will demonstrate how to compute posterior probabilities assoc
 
 We begin with importing the packages that will be used in this tutorial.
 
-```@repl 3
+```@repl tut3
 using ADDM, CSV, DataFrames, DataFramesMeta, Distributions, LinearAlgebra, StatsPlots
 ```
 
 The toolbox comes with a subset of the data from Krajbich et al. (2010). In this tutorials we will use data from a single subject from this dataset.
  
-```@repl 3
+```@repl tut3
 krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv");
 
 subj_data = krajbich_data["18"];
@@ -31,7 +31,7 @@ subj_data = krajbich_data["18"];
 To examine the uncertainty associated with each parameter and their combinations we define the parameter space in `param_grid` and use `ADDM.grid_search` to compute the negative log-likelihood (nll) for each parameter combination. Moreover, here we introduce the `return_model_posteriors` argument when running `ADDM.grid_search`, which expands the output to include a `trial_posteriors` dictionary. `trial_posteriors` is indexed by the keys of `param_grid` as indicators of different parameter combinations and contains the posterior probability for each key after each trial as its values.
 
 
-```@repl 3
+```@repl tut3
 fn = "../../../data/Krajbich_grid3.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))));
@@ -56,7 +56,7 @@ model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(
 
 The `model_posteriors` variable is a dictionary indexed by the model number as listed in the `param_grid` input but does not contain information on the specific combination of parameters for each model. Here, we convert that `model_posteriors` dictionary to a dataframe with the specific parameter information so it is easier to make plots with.
 
-```@repl 3
+```@repl tut3
 posteriors_df1 = DataFrame();
 
 for (k, v) in param_grid
@@ -70,7 +70,7 @@ Now we can visualize the posterior probability for each parameter combination. N
 
 Note also that we're only plotting the posteriors for models that have a meaningful amount of probability mass instead of all the models that were tested by excluding rows without a posterior probability greater than `1e-10`.
 
-```@repl 3
+```@repl tut3
 plot_df = @chain posteriors_df1 begin
   @rsubset :posterior > 1e-10
   @rtransform :x_label = "d: " * string(:d) * ", \nσ: " * string(:sigma) * ", \nθ: " * string(:theta) 
@@ -80,7 +80,7 @@ plot_df = @chain posteriors_df1 begin
 sort(posteriors_df1, :posterior, rev=true)
 ```
 
-```@repl 3
+```@repl tut3
 @df plot_df bar(:x_label, :posterior, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
 savefig("plot_3_1.png"); nothing # hide
@@ -93,7 +93,7 @@ The `ADDM.grid_search` function's `return_model_posteriors` argument returns the
 
 To do so, first we rangle the `trial_posteiriors` into a data frame for easier visualization.
 
-```@repl 3
+```@repl tut3
 # Initialize empty df
 trial_model_posteriors = DataFrame();
 
@@ -113,7 +113,7 @@ end;
 
 Then, plot changes to posteriors of each model across trials. Note, we have omitted a legend indicating the parameters associated with each line in the plot below to avoid over-crowding the plot. This is meant only as an intial exploration into how the conclusions about the best model vary with increased evidence from each trial.
 
-```@repl 3
+```@repl tut3
 @df trial_model_posteriors plot(
       :trial_num,
       :posterior,
@@ -133,7 +133,7 @@ savefig("plot_3_2.png"); nothing # hide
 
 As described above the `model_posteriors` dictionary contains the probability distribution associated with each parameter *combination* but does *not* include the information on the individual parameter values. The `ADDM.marginal_posteriors` function adds this information and summarizes the probability distribution collapsing over levels of different parameters. Below, we first summarize the distribution for each of the three parameters separately.
 
-```@repl 3
+```@repl tut3
 param_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors)
 
 plot_array = Any[];
@@ -151,13 +151,13 @@ savefig("plot_3_3.png"); nothing # hide
 
 We can also use the `ADDM.marginal_posteriors` function to compute parameter posteriors with respect to each other by specifying the third positional argument. When set to `true`, the `ADDM.marginal_posteriors` function returns pairwise marginal distributions that can be plotted as heatmaps to visualize conditional distributions of the parameters.   
 
-```@repl 3
+```@repl tut3
 marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true)
 ```
 
 The toolbox includes a visualization function, `ADDM.margpostplot` that creates a grid of plots with individual parameter posteriors on the diagonal and the conditional posteriors as heatmaps below the diagonal.
 
-```@repl 3
+```@repl tut3
 ADDM.margpostplot(marginal_posteriors)
 
 savefig("plot_3_4.png"); nothing # hide
@@ -169,7 +169,7 @@ savefig("plot_3_4.png"); nothing # hide
 
 Similar to trialwise changes for combinations of parameters, we can also examine trialwise changes to marginalized posteriors for each individual parameter as well. Here we do so by using `ADDM.marginal_posteriors` for each entry in `trial_posteriors`.
 
-```@repl 3
+```@repl tut3
 # Initialize empty df
 trial_param_posteriors = DataFrame();
 
@@ -198,7 +198,7 @@ end
 
 Plot trialwise marginal posteriors for each parameter
 
-```@repl 3
+```@repl tut3
 par_names = unique(trial_param_posteriors[:,:par_name]);
 
 plot_array = Any[];
@@ -239,21 +239,27 @@ The comparison of these two generative processes is operationalized by specifyin
 
 First we read in the file that defines the parameter space for the first model, the standard aDDM.
 
-```@repl 3
+```@repl tut3
 fn = "../../../data/Krajbich_grid3.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood";
 param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
 ```
 
-Then we define the likelihood function for the second model along with the parameter space we will examine for this second model. Note also that we modify the indices of the specific parameter combinations for this second model to avoid over-writing the parameters from the first model.
+Then we define the likelihood function for the second model. We do this by reading in a custom function we have defined in a separate script. This script includes a function called `my_likelihood_fn`. We will use this function name string when defining the parameter space.
 
-```@repl 3
-include("my_likelihood_fn.jl"); nothing # hide
+**grid_search() looks for the custom likelihood function in `Main`. But I don't think that is the module the function is sourced into when reading it in the following `@repl` block,**
+  
+```@repl tut3
+include("./my_likelihood_fn.jl")
+```
 
+Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. Note also that we modify the indices of the specific parameter combinations for this second model to avoid over-writing the parameters from the first model.
+
+```@repl tut3
 fn = "../../../data/custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
-tmp.likelihood_fn .= "my_likelihood_fn";
+tmp.likelihood_fn .= "tut3.my_likelihood_fn";
 param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))));
 
 # Increase the indices of the second model's parameter combinations 
@@ -265,13 +271,13 @@ param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_gri
 
 Now that we have defined the parameter space for both models, we combine them both in a single `param_grid`, over which we'll compute the posterior distribution.
 
-```@repl 3
+```@repl tut3
 param_grid = Dict(param_grid1..., param_grid2...)
 ```
 
 With this expanded `param_grid` that includes information on the different likelihood functions we call the `ADDM.grid_search` function setting the third position argument to `nothing`. This argument is where we define the likelihood function in the case of a single model but now this is specified in the `param_grid`.
 
-```@repl 3
+```@repl tut3
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
 best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,
@@ -285,7 +291,7 @@ model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(
 
 Just as before, the `model_posteriors` dictionary does not contain information on the parameters, so we combine it with the `param_grid` in a `DataFrame` for visualization purposes.
 
-```@repl 3
+```@repl tut3
 posteriors_df2 = DataFrame();
 for (k, v) in param_grid
   cur_row = DataFrame([v])
@@ -297,20 +303,20 @@ end;
 
 We can take a look at the most likely parameter combinations across the generative processes.
 
-```@repl 3
+```@repl tut3
 sort(posteriors_df2, :posterior, rev=true)
 ```
 !!! note
 
     The posterior probability associated with the standard model for parameters `d = 0.00085`, `sigma = 0.055`  and `theta =  0.5`  is **not** the same as what it was when comparing the parameter combinations for a single generative process in the first section of this tutorial. Now, this posterior is normalized not only over the parameter combinations of the standard model but also over all the combinations that we examined for the alternative model.
 
-```@repl 3
+```@repl tut3
 sort(posteriors_df1, :posterior, rev=true)[1,:posterior] == sort(posteriors_df2, :posterior, rev=true)[1,:posterior]
 ```
 
 We can also collapse the posterior distribution across the generative processes and compare how much better one processes is compared to the other in giving rise to the observed data.  
 
-```@repl 3
+```@repl tut3
 gdf = groupby(posteriors_df2, :likelihood_fn);
 combdf = combine(gdf, :posterior => sum)
 
@@ -322,7 +328,7 @@ savefig("plot_3_6.png"); nothing # hide
 
 We can check whether this conclusion changed with more trials
 
-```@repl 3
+```@repl tut3
 # Initialize empty df
 trial_model_posteriors = DataFrame();
 model_info = DataFrame(model_num = [x for x in keys(param_grid)], likelihood_fn = [x.likelihood_fn for x in values(param_grid)]);
@@ -369,7 +375,7 @@ One can choose different features and statistics about the observed data to comp
 
 First, we get best fitting parameters for each model.
 
-```@repl 3
+```@repl tut3
 bestModelPars = @chain posteriors_df2 begin
     groupby(:likelihood_fn) 
     combine(_) do sdf
@@ -382,7 +388,7 @@ Using these parameters for each model we simulate data for the stimuli used in t
 
 We begin with preparing the inputs for the simulating function. These are the fixation data, simulator arguments and the stimuli.
 
-```@repl 3
+```@repl tut3
 vDiffs = sort(unique([x.valueLeft - x.valueRight for x in subj_data]));
 fixData = ADDM.process_fixations(krajbich_data, fixDistType="fixation", valueDiffs = vDiffs);
 
@@ -393,7 +399,7 @@ MyStims = (valueLeft = [x.valueLeft for x in subj_data], valueRight = [x.valueRi
 
 Then, we define the standard model with the best fitting parameters.
 
-```@repl 3
+```@repl tut3
 standPars = @rsubset bestModelPars :likelihood_fn == "ADDM.aDDM_get_trial_likelihood";
 
 standModel = ADDM.define_model(d = standPars.d[1], σ = standPars.sigma[1], θ = standPars.theta[1]);
@@ -401,19 +407,19 @@ standModel = ADDM.define_model(d = standPars.d[1], σ = standPars.sigma[1], θ =
 
 Now that the model and the inputs for the simulator are defined we can simulate data.
 
-```@repl 3
+```@repl tut3
 simStand = ADDM.simulate_data(standModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs);
 ```
 
 We repeat these steps for the alternative model. The simulator function for this model is defined in `my_trial_simulator.jl` so we need to source that into our session before we can call the function.
 
-```@repl 3
+```@repl tut3
 include("./my_trial_simulator.jl")
 ```
 
 Now we can define the alternative model with the best fitting parameters for that model and simulate data.
 
-```@repl 3
+```@repl tut3
 ## Define standard model with the best fitting parameters
 altPars = @rsubset bestModelPars :likelihood_fn == "my_likelihood_fn";
 altModel = ADDM.define_model(d = altPars.d[1], σ = altPars.sigma[1], θ = altPars.theta[1])
@@ -425,7 +431,7 @@ simAlt = ADDM.simulate_data(altModel, MyStims, my_trial_simulator, MyArgs);
 
 Now that we have simulated data using both generative processes, we can plot the response time data for the true and simulated data. We will visualize this as histograms and kernel density estimates of RT distributions conditional on choice. The RTs for left choices will be on the left side of the plot and vice versa for right choice RTs. For visualization purposes the left choice RTs are multiplied by -1.
 
-```@repl 3
+```@repl tut3
 # Plot true RT histograms overlaid with simulated RT histograms
 
 ## Define the limit for the x-axis based on true data
@@ -445,7 +451,7 @@ rts_neg_alt = [i.RT * (-1) for i in simAlt if i.choice < 0];
 
 Having extracted the data for both the true and simulated RTs we can plot them on top each other. 
 
-```@repl 3
+```@repl tut3
 ## Make plot
 
 histogram(rts_pos, normalize=true, bins = range(-l, l, length=41), fillcolor = "gray", yaxis = false, grid = false, label = "True data")

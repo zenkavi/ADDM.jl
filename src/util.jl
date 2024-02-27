@@ -1,5 +1,5 @@
 """
-    load_data_from_csv(expdataFileName, fixationsFileName; convertItemValues=nothing)
+    load_data_from_csv(expdataFileName, fixationsFileName; stimsOnly = false)
 
 Load experimental data from two CSV files: an experimental data file and a
 fixations file. Format expected for experimental data file: parcode, trial,

@@ -1,11 +1,13 @@
 """
-    aDDM_get_trial_likelihood(addm::aDDM, trial::aDDMTrial; timeStep::Number = 10.0, 
+    aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial, timeStep::Number = 10.0, 
                               approxStateStep::Number = 0.1)
 
 Compute the likelihood of the data from a single aDDM trial for these particular aDDM 
   parameters.
 
 # Arguments:
+
+## Keyword arguments
 - `model`: aDDM object.
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the
@@ -176,14 +178,15 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
 end
 
 """
-    DDM_get_trial_likelihood(ddm::aDDM, trial::Trial; timeStep::Number = 10, 
-                             approxStateStep::Number = 0.1, 
-                             decay::Number = 0)
+    DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial, timeStep::Number = 10, 
+                             approxStateStep::Number = 0.1)
 
 Compute the likelihood of the data from a single DDM trial for these
 particular DDM parameters.
 
 # Arguments
+
+## Keyword arguments
 - `model`: aDDM object.
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the

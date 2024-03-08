@@ -1,0 +1,1 @@
+Summary of how Wenning implements `optim` with a likelihood function

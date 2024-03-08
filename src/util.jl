@@ -108,11 +108,11 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing; stimsO
 end
 
 """
-    convert_param_symbols(model)
+    convert_param_text_to_symbols!(model)
 
 Convert parameter names that are specified in text into greek/latex symbols. Used by `ADDM.grid_search`
 """
-function convert_param_symbols(model)
+function convert_param_text_to_symbols!(model)
 
   sym_dict = REPL.REPLCompletions.latex_symbols
   

@@ -32,6 +32,8 @@ Compute the likelihood of either observed or simulated data for all parameter co
 - `model_priors`: priors for each model probability if not assummed to be uniform. Should be
   specified as a `Dict` with values of probabilities matching the keys for the correct model
   specified in `param_grid`.
+- `likelihood_fn_module`: If an alternative likelihood fn is 
+- `sequential_model`: Boolean to specify if the model requires all data concurrently (e.g. RL-DDM). If `true` model cannot be multithreaded
 
 # Returns
 - `best_part`: `Dict` containing the parameter combination with the lowest nll.
@@ -45,42 +47,58 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
                     likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
                     return_model_posteriors = false,
                     model_priors = nothing,
-                    likelihood_fn_module = Main)
+                    likelihood_fn_module = Main,
+                    sequential_model = false)
 
-  n = length(param_grid) # number of parameter combinations specified in param_grid
-  # all_nll = Vector{}(undef, n)
-  # trial_likelihoods = Vector{}(undef, n)
-  all_nll = Dict()
-  trial_likelihoods = Dict()
-
+  # Indexed with model param information instead of param_grid rows using NamedTuple keys.
+  # Defined with a specific length for performance.
+  n = length(param_grid)
+  all_nll = Dict(zip(param_grid, zeros(n)))
+  
+  # compute_trials_nll returns a dict indexed by trial numbers 
+  # so trial_likelihoods are initialized with keys as parameter combinations and values of empty dictionaries
+  n_trials = length(data)
+  trial_likelihoods = Dict(k => Dict(zip(1:n_trials, zeros(n_trials))) for k in param_grid)
+  # this is a bit more flexible but might not be as performant
+  # Dict(k => Dict{Int64, Float64}() for k in param_grid) 
+  
   # Pass fixed parameters to the model
   # These don't need to be updated for each combination of the parameter grid
-  # model = ADDM.aDDM()
   model = aDDM()
   for (k,v) in fixed_params setproperty!(model, k, v) end
 
   # What should the structure of param_grid be?
-  # Currently it is a dictionary of NamedTuples 
-  # Note that if all_nll is defined as a Vector above
-  # then this loop relies on the keys of param_grid being numbers
+  # It used to be a dictionary of NamedTuples 
+  # because when all_nll was defined as a Vector above
+  # then this loop used/relied on the keys of param_grid being numbers
   # e.g. 1 => (d = 0.003, sigma = 0.01, theta = 0.2)
   # because the keys index k is used to index the all_nll vector as well
-  for (k, cur_grid_params) in param_grid
+  # But this always led to making sure that outputs were aligned with the parameters
+  # Now param_grid is a Vector of NamedTuples that contain the param combination 
+  # These are used as the keys for the output Dicts as well
+
+  # !!!!!!!!! This is what I want to parallelize as MPI jobs on top of the threaded compute_trials_nll
+  for cur_grid_params in param_grid
     
     # If likelihood_fn is not defined as argument to the function 
     # it should be defined in the param_grid
     # Extract that info and create variable that contains executable function
-    if (:likelihood_fn in keys(cur_grid_params))
-      likelihood_fn_str = cur_grid_params[:likelihood_fn]
-      if (occursin(".", likelihood_fn_str))
-        space, func = split(likelihood_fn_str, ".")
-        likelihood_fn = getfield(getfield(Main, Symbol(space)), Symbol(func))
+    if likelihood_fn === nothing
+      if :likelihood_fn in keys(cur_grid_params)
+        likelihood_fn_str = cur_grid_params[:likelihood_fn]
+        if (occursin(".", likelihood_fn_str))
+          space, func = split(likelihood_fn_str, ".")
+          likelihood_fn = getfield(getfield(Main, Symbol(space)), Symbol(func))
+        else
+          likelihood_fn = getfield(likelihood_fn_module, Symbol(likelihood_fn_str))
+        end
       else
-        likelihood_fn = getfield(likelihood_fn_module, Symbol(likelihood_fn_str))
+        println("likelihood_fn not specified or defined in param_grid")
       end
     end
 
     # Update the model with the current parameter combination
+    # By default cur_grid_params are NamedTuples so it needs pairs to map k, v pairs
     if !(cur_grid_params isa Dict)
       for (k,v) in pairs(cur_grid_params) setproperty!(model, k, v) end
     else
@@ -88,17 +106,16 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     end
     
     # Make sure param names are converted to Greek symbols
-    # ADDM.convert_param_symbols(model)
-    convert_param_symbols(model)
+    convert_param_text_to_symbols!(model)
 
+    # !!!!!!!!! Add condition when sequential_model is false and threading should not be done
     if return_model_posteriors
-      # all_nll[k], trial_likelihoods[k] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
-      #                         return_trial_likelihoods = true)
-      all_nll[k], trial_likelihoods[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
-                              return_trial_likelihoods = true)
+      # Now trial likelihoods will be a dict indexed by trial numbers
+      all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
+                              return_trial_likelihoods = true,  sequential_model = false)
 
     else
-      all_nll[k] = compute_trials_nll(model, data, likelihood_fn, likelihood_args)
+      all_nll[cur_grid_params] = compute_trials_nll(model, data, likelihood_fn, likelihood_args)
     end
   
   end
@@ -107,11 +124,13 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
 
   # Extract best pars
   # TODo: Convert param names to greek letters?
+  # !!!!!!!!! Confirm this argmin works when all_nll is a dictionary 
   minIdx = argmin(all_nll)
   best_fit_pars = Dict(pairs(param_grid[minIdx]))
   best_pars = merge(best_fit_pars, fixed_params)
   best_pars[:nll] = all_nll[minIdx]
 
+  # !!!!!!!!! Fix return conditionals
   if return_grid_nlls
       # Add param info to all_nll
       all_nll_df = DataFrame()
@@ -125,8 +144,8 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       end
     
     # Why is this conditional on return_grid_nlls?
+    # !!!!!!!!! Verify this all works with the new outputs of compute_trials_nll
     if return_model_posteriors
-        # TODo: Add param info to trial_likelihoods? 
         
         # Process trial likelihoods to compute model posteriors for each parameter combination
         nTrials = length(data)
@@ -182,11 +201,3 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   end
 
 end
-
-# Check each value in the posteriors adds up to 1 after each trial update
-# for i in 1:length(posteriors)
-#   println(sum([x[i] for x in values(posteriors)]))
-# end
-
-# # Get only the last value in posteriors
-# [x[nTrials] for x in values(posteriors)]

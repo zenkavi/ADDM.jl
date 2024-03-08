@@ -30,7 +30,7 @@ include("fixation_data.jl")
 include("simulate_data.jl")
 include("compute_likelihood.jl")
 include("util.jl")
-include("grid_search.jl")
+# include("grid_search.jl")
 include("marginal_posteriors.jl")
 include("margpostplot.jl")
 

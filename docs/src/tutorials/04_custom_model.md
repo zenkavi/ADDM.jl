@@ -163,7 +163,7 @@ Now that we have generated some data using known parameters with our custom simu
 ```@repl 4
 fn = "../../../data/custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
-param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))));
+param_grid = NamedTuple.(eachrow(tmp));
 ```
 
 #### Run grid search on simulated data
@@ -173,13 +173,15 @@ fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bi
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
-best_pars, nll_df, trial_posteriors = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
+output = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
     likelihood_args=my_likelihood_args, 
-    return_model_posteriors = true);
+    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
 
-nTrials = length(my_sim_data);
-model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]));
+best_pars = output[:best_pars];
+nll_df = output[:grid_nlls];
+trial_posteriors = output[:trial_posteriors];
+model_posteriors = output[:model_posteriors];
 ```
 
 The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.

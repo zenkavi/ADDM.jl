@@ -34,17 +34,19 @@ To examine the uncertainty associated with each parameter and their combinations
 ```@repl 3
 fn = "../../../data/Krajbich_grid3.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
-param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))));
+param_grid = NamedTuple.(eachrow(tmp));
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 
-best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+output = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
     likelihood_args=my_likelihood_args, 
-    return_model_posteriors = true);
+    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
 
-nTrials = length(subj_data);
-model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]))
+best_pars = output[:best_pars]
+nll_df = output[:grid_nlls]
+trial_posteriors = output[:trial_posteriors]
+model_posteriors = output[:model_posteriors]
 ```
 
 !!! note
@@ -89,7 +91,7 @@ savefig("plot_3_1.png"); nothing # hide
 
 #### Trialwise changes to the model posteriors
 
-The `ADDM.grid_search` function's `return_model_posteriors` argument returns the discretized posterior distribution for each model after each *trial/observation*. This allows us to examine how the posterior distribution changes accounting for increasing amounts of data.
+The `ADDM.grid_search` function's `return_trial_posteriors` argument returns the discretized posterior distribution for each model after each *trial/observation*. This allows us to examine how the posterior distribution changes accounting for increasing amounts of data.
 
 To do so, first we rangle the `trial_posteiriors` into a data frame for easier visualization.
 
@@ -243,7 +245,7 @@ First we read in the file that defines the parameter space for the first model, 
 fn = "../../../data/Krajbich_grid3.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood";
-param_grid1 = Dict(pairs(NamedTuple.(eachrow(tmp))))
+param_grid1 = NamedTuple.(eachrow(tmp))
 ```
 
 Then we define the likelihood function for the second model. We do this by reading in a custom function we have defined in a separate script. This script includes a function called `my_likelihood_fn`. We will use this function name string when defining the parameter space.
@@ -255,25 +257,20 @@ include("./my_likelihood_fn.jl")
 fn_module = [meth.module for meth in methods(my_likelihood_fn)][1]
 ```
 
-Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. Note also that we modify the indices of the specific parameter combinations for this second model to avoid over-writing the parameters from the first model.
+Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. 
 
 ```@repl 3
 fn = "../../../data/custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 tmp.likelihood_fn .= "my_likelihood_fn";
-param_grid2 = Dict(pairs(NamedTuple.(eachrow(tmp))));
+param_grid2 = NamedTuple.(eachrow(tmp));
 
-# Increase the indices of the second model's parameter combinations 
-# This avoid overwriting the parameter combinations with the same index 
-# in the first parameter grid
-
-param_grid2 = Dict(keys(param_grid2) .+ length(param_grid1) .=> values(param_grid2));
 ```
 
 Now that we have defined the parameter space for both models, we combine them both in a single `param_grid`, over which we'll compute the posterior distribution.
 
 ```@repl 3
-param_grid = Dict(param_grid1..., param_grid2...)
+param_grid = vcat(param_grid1, param_grid2)
 ```
 
 With this expanded `param_grid` that includes information on the different likelihood functions we call the `ADDM.grid_search` function setting the third position argument to `nothing`. This argument is where we define the likelihood function in the case of a single model but now this is specified in the `param_grid`.
@@ -281,31 +278,33 @@ With this expanded `param_grid` that includes information on the different likel
 ```@repl 3
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
   
-best_pars, nll_df, trial_posteriors = ADDM.grid_search(subj_data, param_grid, nothing,
+output = ADDM.grid_search(subj_data, param_grid, nothing,
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
-    likelihood_args=my_likelihood_args, 
-    return_model_posteriors = true, likelihood_fn_module = fn_module);
+    likelihood_args=my_likelihood_args, likelihood_fn_module = fn_module, 
+    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
 
-nTrials = length(subj_data);
-model_posteriors = Dict(zip(keys(trial_posteriors), [x[nTrials] for x in values(trial_posteriors)]));
+best_pars = output[:best_pars]
+nll_df = output[:grid_nlls]
+trial_posteriors = output[:trial_posteriors]
+model_posteriors = output[:model_posteriors];
 ```
 
 Just as before, the `model_posteriors` dictionary does not contain information on the parameters, so we combine it with the `param_grid` in a `DataFrame` for visualization purposes.
 
 ```@repl 3
-posteriors_df2 = DataFrame();
-for (k, v) in param_grid
-  cur_row = DataFrame([v])
-  cur_row.posterior = [model_posteriors[k]]
-  # append!(posteriors_df2, cur_row)
-  posteriors_df2 = vcat(posteriors_df2, cur_row, cols=:union)
-end;
+# posteriors_df2 = DataFrame();
+# for (k, v) in param_grid
+#   cur_row = DataFrame([v])
+#   cur_row.posterior = [model_posteriors[k]]
+#   # append!(posteriors_df2, cur_row)
+#   posteriors_df2 = vcat(posteriors_df2, cur_row, cols=:union)
+# end;
 ```
 
 We can take a look at the most likely parameter combinations across the generative processes.
 
 ```@repl 3
-sort(posteriors_df2, :posterior, rev=true)
+# sort(posteriors_df2, :posterior, rev=true)
 ```
 !!! note
 

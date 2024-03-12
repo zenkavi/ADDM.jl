@@ -109,13 +109,16 @@ The work horse function for this is `ADDM.grid_search`. It computes the negative
 ```@repl 1
 fn = "../../../data/addm_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
-param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
+param_grid = NamedTuple.(eachrow(tmp))
 ```
 
 Having defined the parameter space we can compute the likelihood of the data for each point in it and select the combination that has the highest likelihood.
 
 ```@repl 1
-best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0));
+output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0); return_grid_nlls = true);
+
+best_pars = output[:best_pars];
+all_nll_df =  = output[:grid_nlls];
 ```
 
 Below we display the sum of negative log likelihoods for each parameter combination.
@@ -140,7 +143,10 @@ The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. L
 ```@repl 1
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
 
-best_pars, all_nll_df = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args);
+output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args, return_grid_nlls = true);
+
+best_pars = output[:best_pars];
+all_nll_df =  = output[:grid_nlls];
 
 sort!(all_nll_df, [:nll])
 ```

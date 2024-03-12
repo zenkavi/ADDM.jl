@@ -36,7 +36,7 @@ Now that we have loaded our data, we define the parameter space over which we'll
 ```@repl 2
 fn = "../../../data/Krajbich_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
-param_grid = Dict(pairs(NamedTuple.(eachrow(tmp))))
+param_grid = NamedTuple.(eachrow(tmp))
 ```
 
 Since the dataset contains multiple subjects and we want to compute the best parameters for each subject, we loop through each subject's dataset and collect the estimated parameters in a single data frame for each subject.
@@ -48,7 +48,10 @@ best_pars = Dict();
 for k in keys(krajbich_data)
   cur_subj_data = krajbich_data[k]
   
-  subj_best_pars, subj_nll_df = ADDM.grid_search(cur_subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0))
+  output = ADDM.grid_search(cur_subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), return_grid_nlls = true)
+
+  subj_best_pars = output[:best_pars]
+  subj_nll_df = output[:grid_nlls]
 
   best_pars[k] = subj_best_pars
 

@@ -112,16 +112,31 @@ end
 
 Convert parameter names that are specified in text into greek/latex symbols. Used by `ADDM.grid_search`
 """
-function convert_param_text_to_symbols!(model)
+function convert_param_text_to_symbol(model)
 
   sym_dict = REPL.REPLCompletions.latex_symbols
   
-  for p in propertynames(model)
-    v = getproperty(model, p)
-    p = "\\".* String(p)
-    if p in keys(sym_dict)
-      # Add property with the latex symbol to the model too
-      setproperty!(model, Symbol(sym_dict[p]), v)
+  if model isa ADDM.aDDM
+    for p in propertynames(model)
+      v = getproperty(model, p)
+      p = "\\".* String(p)
+      if p in keys(sym_dict)
+        s = Symbol(sym_dict[p])
+        # Add/replace greek letter property with 
+        setproperty!(model, s, v)
+      end
+    end
+  end
+
+  if model isa Dict
+    for p in keys(model)
+      v = model[p]
+      p = "\\".* String(p)
+      if p in keys(sym_dict)
+        s = Symbol(sym_dict[p])
+        # Add/replace greek letter property with 
+        model[s] = v
+      end
     end
   end
 

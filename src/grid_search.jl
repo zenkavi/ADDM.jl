@@ -1,20 +1,13 @@
 """
     grid_search(data, param_grid, likelihood_fn = nothing, 
-                    fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-                    return_grid_nlls = true,
-                    likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
-                    return_model_posteriors = false,
-                    model_priors = nothing,
-                    likelihood_fn_module = Main,
-                    sequential_model = false)
-                    fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-                    return_grid_nlls = true,
-                    likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
-                    return_model_posteriors = false,
-                    model_priors = nothing,
-                    likelihood_fn_module = Main,
-                    sequential_model = false)
-                likelihood_args =  (timeStep = 10.0, approxStateStep = 0.1), return_trial_likelihoods = false)
+                fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
+                likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
+                return_grid_nlls = false,
+                return_model_posteriors = false,
+                return_trial_posteriors = false,
+                model_priors = nothing,
+                likelihood_fn_module = Main,
+                sequential_model = false)
 
 Compute the likelihood of either observed or simulated data for all parameter combinations in `param_grid`.
 
@@ -48,13 +41,14 @@ Compute the likelihood of either observed or simulated data for all parameter co
   specified as a `Dict` with values of probabilities matching the keys for the correct model
   specified in `param_grid`.
 - `likelihood_fn_module`: If an alternative likelihood fn is 
-- `sequential_model`: Boolean to specify if the model requires all data concurrently (e.g. RL-DDM). If `true` model cannot be multithreaded
+- `sequential_model`: Boolean to specify if the model requires all data concurrently (e.g. RL-DDM). If `true` 
+  likelihood computation for model cannot be multithreaded (though grid search still can be).
 
 # Returns
 - `best_pars`: `Dict` containing the parameter combination with the lowest nll.
-- `grid_nlls`: `DataFrame` containing sum of nll's for each parameter combination.
-- `trial_posteriors`: Posterior probability for each parameter combination after each trial.
-- `model_posteriors`: Posterior probability for each parameter combination after all trials.
+- `grid_nlls`: (Optional) `DataFrame` containing sum of nll's for each parameter combination.
+- `trial_posteriors`: (Optional) Posterior probability for each parameter combination after each trial.
+- `model_posteriors`: (Optional) Posterior probability for each parameter combination after all trials.
 
 """
 function grid_search(data, param_grid, likelihood_fn = nothing, 
@@ -84,17 +78,11 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   model = ADDM.aDDM()
   for (k,v) in fixed_params setproperty!(model, k, v) end
 
-  # What should the structure of param_grid be?
-  # It used to be a dictionary of NamedTuples 
-  # because when all_nll was defined as a Vector above
-  # then this loop used/relied on the keys of param_grid being numbers
-  # e.g. 1 => (d = 0.003, sigma = 0.01, theta = 0.2)
-  # because the keys index k is used to index the all_nll vector as well
-  # But this always led to making sure that outputs were aligned with the parameters
-  # Now param_grid is a Vector of NamedTuples that contain the param combination 
+  
+  #### START OF PARALLELIZABLE PROCESSES
+  
+  # param_grid is a Vector of NamedTuples that contain the param combination 
   # These are used as the keys for the output Dicts as well
-
-  # !!!!!!!!! This is what I want to parallelize as MPI jobs on top of the threaded compute_trials_nll
   for cur_grid_params in param_grid
     
     # If likelihood_fn is not defined as argument to the function 
@@ -125,17 +113,25 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     # Make sure param names are converted to Greek symbols
     model = ADDM.convert_param_text_to_symbol(model)
 
-    # !!!!!!!!! Add condition when sequential_model is false and threading should not be done
     if return_model_posteriors
-      # Now trial likelihoods will be a dict indexed by trial numbers
-      all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
+      # Trial likelihoods will be a dict indexed by trial numbers
+      if sequential_model
+        all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
+                              return_trial_likelihoods = true,  sequential_model = true)
+      else
+        all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                               return_trial_likelihoods = true,  sequential_model = false)
-
+      end
     else
-      all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args)
+      if sequential_model
+        all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = true)
+      else
+        all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args)
+      end
     end
-  
+
   end
+  #### END OF PARALLELIZABLE PROCESSES
 
   # Wrangle likelihood data and extract best pars
 

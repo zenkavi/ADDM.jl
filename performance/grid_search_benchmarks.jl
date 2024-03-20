@@ -6,6 +6,31 @@ using DataFrames
 using FLoops
 
 #########################
+# Initialize arguments
+#########################
+
+# $DATA_PATH {GRID_SEARCH_FN} {GRID_SEARCH_EXEC} {TRIALS_EXEC} = ARGS 
+
+#########################
+# Define helper
+#########################
+
+@eval BenchmarkTools macro btimed(args...)
+  _, params = prunekwargs(args...)
+  bench, trial, result = gensym(), gensym(), gensym()
+  trialmin, trialallocs = gensym(), gensym()
+  tune_phase = hasevals(params) ? :() : :($BenchmarkTools.tune!($bench))
+  return esc(quote
+      local $bench = $BenchmarkTools.@benchmarkable $(args...)
+      $BenchmarkTools.warmup($bench)
+      $tune_phase
+      local $trial, $result = $BenchmarkTools.run_result($bench)
+      local $trialmin = $BenchmarkTools.minimum($trial)
+      $result, $BenchmarkTools.time($trialmin), $BenchmarkTools.memory($trialmin)
+  end)
+end
+
+#########################
 # Define functions
 #########################
 
@@ -555,152 +580,150 @@ param_grid = NamedTuple.(eachrow(tmp));
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0);
 
-# Make sure functions are working
-output = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true);
-
-output = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true);
-
-output = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true);
-
-# best_pars = output[:best_pars];
-# nll_df = output[:grid_nlls];
-# trial_posteriors = output[:trial_posteriors];
-# model_posteriors = output[:model_posteriors];
-
 #########################
-# Run Benchmarks
+# Select benchmark function
 #########################
 
-## Returning trial likelihoods does not slow things down
-b1a = @benchmark grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = true, threaded = false);
-println("sequential grid_search w sequential compute_trials_nll = $(median(b1.times)/10^6)")
+if grid_search_fn == "thread"
+  if grid_search_exec == "thread"
+    if trials_exec == "thread"
+      f() = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = false, threaded = true)
+    else
+      f() = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = true, threaded = true)
+    end
+  else
+    if trial_exec == "thread"
+      f() = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = false, threaded = false)
+    else
+      f() = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = true, threaded = false)
+    end
+  end
+end
 
-b1b = @benchmark grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false, threaded = false);
-println("sequential grid_search w @threads compute_trials_nll = $(median(b2.times)/10^6)")
+if grid_search_fn == "floop"
+  if grid_search_exec == "thread"
+    if trials_exec == "thread"
+      f() = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = false, grid_exec = ThreadedEx())
+    else
+      f() = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = true, grid_exec = ThreadedEx())
+    end
+  else
+    if trial_exec == "thread"
+      f() = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = false, grid_exec = SequentialEx())
+    else
+      f() = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                sequential_model = true, grid_exec = SequentialEx())
+    end
+  end
+end
+
+if grid_search_fn == "floop2"
+  if grid_search_exec == "thread"
+    if trials_exec == "thread"
+      f() = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
+    else
+      f() = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                trials_exec = SequentialEx(), grid_exec = ThreadedEx())
+    end
+  else
+    if trial_exec == "thread"
+      f() = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                trials_exec = ThreadedEx(), grid_exec = SequentialEx())
+    else
+      f() = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
+                                fixed_params, 
+                                likelihood_args = my_likelihood_args, 
+                                return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
+                                trials_exec = SequentialEx(), grid_exec = SequentialEx())
+    end
+  end
+end
 
 
-b1c = @benchmark grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = true, threaded = true);
-println("@threads grid_search w sequential compute_trials_nll = $(median(b3.times)/10^6)")
 
-b1d = @benchmark grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false, threaded = true);
-println("@threads grid_search @threads compute_trials_nll = $(median(b4.times)/10^6)")
 
-# @floop to grid_serch + @threads compute_trials_nll
-# Need to fix likelihood_fn box; check if it works when param_grid has likelihood_fn
-b2a = @benchmark grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false);
-println("@floop to grid_serch + @threads compute_trials_nll = $(median(b5.times)/10^6)")
-
-b2b = @benchmark grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false,
-                          grid_exec = SequentialEx());
-println("SequentialEx to grid_serch + @threads compute_trials_nll = $(median(b5a.times)/10^6)")
-
-b2c = @benchmark grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false,
-                          grid_exec = SequentialEx());
-println("SequentialEx to grid_serch + @threads compute_trials_nll = $(median(b5a.times)/10^6)")
-
-# Double floop
-# Need to fix likelihood_fn box
-b3a = @benchmark grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false);
-println("@floop to grid_serch + @floop compute_trials_nll = $(median(b6.times)/10^6)")
-
-b3b = @benchmark grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false,
-                          grid_exec = SequentialEx());
-println("SequentialEx to grid_serch + @floop compute_trials_nll = $(median(b6a.times)/10^6)")
-
-b3c = @benchmark grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
-                          fixed_params, 
-                          likelihood_args = my_likelihood_args, 
-                          return_grid_nlls = true, return_model_posteriors = true, return_trial_posteriors = true, 
-                          sequential_model = false,
-                          trials_exec = SequentialEx());
-println("@floop to grid_serch + SequentialEx compute_trials_nll = $(median(b6b.times)/10^6)")
-
-# Usage
-# julia --project=../aDDM-Toolbox/ADDM.jl --threads 3 grid_search_benchmarks.jl
-
+#########################
+# Run Benchmark
+#########################
+                         
 # 1000 trials - simulated
 # 25 x 25 x 25 = 15625 size param_grid
 # Idea: One subject with a lot of data and a thorough grid search
 # Jobs
-
-grid_search_thread(..., sequential_model = true, threaded = false)
-grid_search_thread(..., sequential_model = false, threaded = false)
-grid_search_thread(..., sequential_model = true, threaded = true)
-grid_search_thread(..., sequential_model = false, threaded = true)
-grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
-grid_search_floop(..., sequential_model = true, grid_exec = ThreadedEx())
-grid_search_floop(..., sequential_model = false, grid_exec = SequentialEx())
-grid_search_floop(..., sequential_model = true, grid_exec = SequentialEx())
-grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
-grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = ThreadedEx())
-grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = SequentialEx())
-grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = SequentialEx())
-
-
 # Expected equivalences: (if @floops is not slower than @threads)
 
-grid_search_thread(..., sequential_model = true, threaded = false)
-grid_search_floop(..., sequential_model = true, grid_exec = SequentialEx())
-grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = SequentialEx())
+# grid_search_thread(..., sequential_model = true, threaded = false)
+# grid_search_floop(..., sequential_model = true, grid_exec = SequentialEx())
+# grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = SequentialEx())
 
-grid_search_thread(..., sequential_model = false, threaded = false)
-grid_search_floop(..., sequential_model = false, grid_exec = SequentialEx())
-grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = SequentialEx())
+# grid_search_thread(..., sequential_model = false, threaded = false)
+# grid_search_floop(..., sequential_model = false, grid_exec = SequentialEx())
+# grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = SequentialEx())
 
-grid_search_thread(..., sequential_model = true, threaded = true)
-grid_search_floop(..., sequential_model = true, grid_exec = ThreadedEx())
-grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = ThreadedEx())
+# grid_search_thread(..., sequential_model = true, threaded = true)
+# grid_search_floop(..., sequential_model = true, grid_exec = ThreadedEx())
+# grid_search_floop2(..., trials_exec = SequentialEx(), grid_exec = ThreadedEx())
 
-grid_search_thread(..., sequential_model = false, threaded = true)
-grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
-grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
+# grid_search_thread(..., sequential_model = false, threaded = true)
+# grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
+# grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
 
+output, b_time, b_mem = @btimed f()
 
-# Job scripts for each
-# Output organization for each - want time and output
+base_path = "grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
 
+b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
+b_time_path = base_path * "b_time.csv"
+CSV.write(b_time_path, b_time_df)
+
+best_pars_path = base_path * "best_pars.csv"
+CSV.write(best_pars_path, DataFrame(output[:best_pars]))
+
+# For each element in output[:trial_posteriors]
+# Convert NamedTuple key to columns
+# Convert Dict key to DataFrame where keys become trial_num column and values become posterior
+mydict = collect(values(output[:trial_posteriors]))[1]
+mydf = DataFrame(Symbol(k) => v for (k, v) in pairs(mydict))
+rename!(mydf,:first => :trial_num, :second => :posterior)
+# mydf[!, :d] .= 1

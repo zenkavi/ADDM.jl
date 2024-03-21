@@ -12,10 +12,11 @@
 #SBATCH --output=/central/groups/rnl/zenkavi/.out/{GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}_%j.out
 #SBATCH --error=/central/groups/rnl/zenkavi/.err/{GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}_%j.err
 
-alias julia='/central/software9/external/julia/1.9.4/bin/julia'
 export NUM_THREADS=8
 export DATA_PATH='/central/groups/rnl/zenkavi/ADDM.jl/data'
 export JPROJ_PATH='/central/groups/rnl/zenkavi/ADDM.jl'
 
+module load julia #Got an error without this
+alias julia='/central/software9/external/julia/1.9.4/bin/julia'
 julia --project=$JPROJ_PATH -e 'import Pkg; Pkg.instantiate()'
 julia --project=$JPROJ_PATH grid_search_benchmarks.jl --threads $NUM_THREADS $DATA_PATH {GRID_SEARCH_FN} {GRID_SEARCH_EXEC} {TRIALS_EXEC}

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --time=01:00:00 # walltime
+#SBATCH --time=02:00:00 # walltime
 #SBATCH --job-name={GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}
 #SBATCH --nodes=1 # number of nodes
 #SBATCH --ntasks=1 # number of tasks
-#SBATCH --cpus-per-task=4 # cores per task
+#SBATCH --cpus-per-task=8 # cores per task
 #SBATCH --mem-per-cpu=24G # memory per CPU core
 #SBATCH --mail-user=zenkavi@caltech.edu # email address
 #SBATCH --mail-type=FAIL
@@ -13,9 +13,9 @@
 #SBATCH --error=/central/groups/rnl/zenkavi/.err/{GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}_%j.err
 
 alias julia='/central/software9/external/julia/1.9.4/bin/julia'
-export NUM_THREADS=4
+export NUM_THREADS=8
 export DATA_PATH='/central/groups/rnl/zenkavi/ADDM.jl/data'
 export JPROJ_PATH='/central/groups/rnl/zenkavi/ADDM.jl'
 
 julia --project=$JPROJ_PATH -e 'import Pkg; Pkg.instantiate()'
-julia --project=$JPROJ_PATH grid_search_benchmark.jl --threads $NUM_THREADS $DATA_PATH {GRID_SEARCH_FN} {GRID_SEARCH_EXEC} {TRIALS_EXEC}
+julia --project=$JPROJ_PATH grid_search_benchmarks.jl --threads $NUM_THREADS $DATA_PATH {GRID_SEARCH_FN} {GRID_SEARCH_EXEC} {TRIALS_EXEC}

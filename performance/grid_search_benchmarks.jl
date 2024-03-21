@@ -638,7 +638,7 @@ if grid_search_fn == "thread"
                                 sequential_model = true, threaded = true)
     end
   else
-    if trial_exec == "thread"
+    if trials_exec == "thread"
       f() = grid_search_thread(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
                                 fixed_params, 
                                 likelihood_args = my_likelihood_args, 
@@ -670,7 +670,7 @@ if grid_search_fn == "floop"
                                 sequential_model = true, grid_exec = ThreadedEx())
     end
   else
-    if trial_exec == "thread"
+    if trials_exec == "thread"
       f() = grid_search_floop(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
                                 fixed_params, 
                                 likelihood_args = my_likelihood_args, 
@@ -702,7 +702,7 @@ if grid_search_fn == "floop2"
                                 trials_exec = SequentialEx(), grid_exec = ThreadedEx())
     end
   else
-    if trial_exec == "thread"
+    if trials_exec == "thread"
       f() = grid_search_floop2(data, param_grid, ADDM.aDDM_get_trial_likelihood, 
                                 fixed_params, 
                                 likelihood_args = my_likelihood_args, 

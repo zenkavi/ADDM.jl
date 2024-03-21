@@ -1,4 +1,5 @@
 using ADDM
+using ArgParse
 using Base.Threads
 using BenchmarkTools
 using CSV
@@ -9,7 +10,38 @@ using FLoops
 # Initialize arguments
 #########################
 
-# $DATA_PATH {GRID_SEARCH_FN} {GRID_SEARCH_EXEC} {TRIALS_EXEC} = ARGS 
+function parse_commandline()
+  s = ArgParseSettings()
+
+  @add_arg_table! s begin
+      "dp"
+          help = "first positional argument; data path"
+          arg_type = String
+          required = true
+      "gsf"
+          help = "second positional argument; grid search function"
+          arg_type = String
+          required = true
+      "gse"
+          help = "third positional argument; grid search executor"
+          arg_type = String
+          required = true
+      "te"
+          help = "fourth positional argument; trials executor"
+          arg_type = String
+          required = true
+  end
+
+  parsed_args = parse_args(s)
+  dp = parsed_args["dp"]
+  gsf = parsed_args["gsf"]
+  gse = parsed_args["gse"]
+  te = parsed_args["te"]
+
+  return dp, gsf, gse, te 
+end
+
+dp, grid_search_fn, grid_search_exec, trials_exec = parse_commandline()
 
 #########################
 # Define helper
@@ -568,17 +600,17 @@ end
 #########################
 
 # Read in data
-dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
-krajbich_data = ADDM.load_data_from_csv(dp*"Krajbich2010_behavior.csv", dp*"Krajbich2010_fixations.csv");
-data = krajbich_data["18"];
+# dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
+data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
+data = data[1]
 
 # Read in parameter space
-fn = dp*"/Krajbich_grid3.csv";
+fn = dp*"/sim_data_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 
 my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
-fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0);
+fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
 #########################
 # Select benchmark function
@@ -687,6 +719,43 @@ end
 # Run Benchmark
 #########################
                          
+output, b_time, b_mem = BenchmarkTools.@btimed f()
+
+base_path = "grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
+
+b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
+b_time_path = base_path * "b_time.csv"
+CSV.write(b_time_path, b_time_df)
+
+best_pars_path = base_path * "best_pars.csv"
+CSV.write(best_pars_path, DataFrame(output[:best_pars]))
+
+trial_posteriors_df = DataFrame()
+for (k,v) in output[:trial_posteriors]
+  cur_df = DataFrame(Symbol(i) => j for (i, j) in pairs(v))
+
+  rename!(cur_df, :first => :trial_num, :second => :posterior)
+
+  for (a, b) in pairs(k)
+    cur_df[!, a] .= b
+  end
+
+  cur_df[!, :trial_num] = [parse(Int, (String(i))) for i in cur_df[!,:trial_num]]
+
+  sort!(cur_df, :trial_num)
+
+  trial_posteriors_df = vcat(trial_posteriors_df, cur_df, cols=:union)
+end
+
+trial_posteriors_path = base_path * "trial_posteriors.csv"
+CSV.write(trial_posteriors_path, trial_posteriors_df)
+
+#########################
+# Usage
+#########################
+
+# julia --project=../ --threads 4 grid_search_benchmarks.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ floop2 thread thread 
+
 # 1000 trials - simulated
 # 25 x 25 x 25 = 15625 size param_grid
 # Idea: One subject with a lot of data and a thorough grid search
@@ -708,22 +777,3 @@ end
 # grid_search_thread(..., sequential_model = false, threaded = true)
 # grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
 # grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
-
-output, b_time, b_mem = @btimed f()
-
-base_path = "grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
-
-b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
-b_time_path = base_path * "b_time.csv"
-CSV.write(b_time_path, b_time_df)
-
-best_pars_path = base_path * "best_pars.csv"
-CSV.write(best_pars_path, DataFrame(output[:best_pars]))
-
-# For each element in output[:trial_posteriors]
-# Convert NamedTuple key to columns
-# Convert Dict key to DataFrame where keys become trial_num column and values become posterior
-mydict = collect(values(output[:trial_posteriors]))[1]
-mydf = DataFrame(Symbol(k) => v for (k, v) in pairs(mydict))
-rename!(mydf,:first => :trial_num, :second => :posterior)
-# mydf[!, :d] .= 1

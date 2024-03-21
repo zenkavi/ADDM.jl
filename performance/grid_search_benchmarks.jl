@@ -41,8 +41,11 @@ function parse_commandline()
   return dp, gsf, gse, te 
 end
 
+println("Parsing arguments...")
 dp, grid_search_fn, grid_search_exec, trials_exec = parse_commandline()
 
+
+println("Defining functions...")
 #########################
 # Define helper
 #########################
@@ -601,11 +604,12 @@ end
 
 # Read in data
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
+println("Reading in data...")
 data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
-data = data[1]
+data = data["1"]; # Sim data is saved with parcode "1"
 
 # Read in parameter space
-fn = dp*"/sim_data_grid.csv";
+fn = dp*"/sim_data_grid_tst.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 
@@ -616,6 +620,7 @@ fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bi
 # Select benchmark function
 #########################
 
+println("Selecting benchmark function...")
 if grid_search_fn == "thread"
   if grid_search_exec == "thread"
     if trials_exec == "thread"
@@ -713,15 +718,19 @@ if grid_search_fn == "floop2"
 end
 
 
-
-
 #########################
 # Run Benchmark
 #########################
-                         
+
+println("Starting benchmarking...")
 output, b_time, b_mem = BenchmarkTools.@btimed f()
 
-base_path = "grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
+#########################
+# Save outputs
+#########################
+
+println("Done benchmarking! Starting output processing...")
+base_path = "outputs/grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
 
 b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
 b_time_path = base_path * "b_time.csv"
@@ -744,11 +753,13 @@ for (k,v) in output[:trial_posteriors]
 
   sort!(cur_df, :trial_num)
 
-  trial_posteriors_df = vcat(trial_posteriors_df, cur_df, cols=:union)
+  # trial_posteriors_df = vcat(trial_posteriors_df, cur_df, cols=:union)
+  append!(trial_posteriors_df, cur_df, cols=:union)
 end
 
 trial_posteriors_path = base_path * "trial_posteriors.csv"
 CSV.write(trial_posteriors_path, trial_posteriors_df)
+println("Done!")
 
 #########################
 # Usage

@@ -154,7 +154,7 @@ println("compute_trials_nll (no likelihoods) = $(median(b1.times)/10^6)")
 
 ## Returning trial likelihoods does not slow things down
 b2 = @benchmark compute_trials_nll(model, data, likelihood_fn; return_trial_likelihoods = true)
-println("compute_trials_nll (w likelihoods) = $(median(b2.times)/10^6)")
+println("compute_trials_nll (w likelihoods) = $(median(b2.times)/10^6) ms")
 
 ## Increasing from 1 to 3 threads cut time by half
 b3 = @benchmark compute_trials_nll_threads(model, data, likelihood_fn; return_trial_likelihoods = false)

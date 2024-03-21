@@ -609,7 +609,8 @@ data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
 data = data["1"]; # Sim data is saved with parcode "1"
 
 # Read in parameter space
-fn = dp*"/sim_data_grid_tst.csv";
+# fn = dp*"/sim_data_grid_tst.csv";
+fn = dp*"/sim_data_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 
@@ -766,7 +767,7 @@ println("Done!")
 #########################
 
 # julia --project=../ --threads 4 grid_search_benchmarks.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ floop2 thread thread 
-# julia --project=../ --threads 4 grid_search_benchmarks.jl /central/groups/rnl/zenkavi/ADDM.jl/data/ floop2 thread thread 
+# julia --project=../ --threads 8 grid_search_benchmarks.jl /central/groups/rnl/zenkavi/ADDM.jl/data/ floop2 thread thread 
 
 # 1000 trials - simulated
 # 25 x 25 x 25 = 15625 size param_grid

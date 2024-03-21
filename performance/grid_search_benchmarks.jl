@@ -42,10 +42,12 @@ function parse_commandline()
 end
 
 println("Parsing arguments...")
+flush(stdout)
 dp, grid_search_fn, grid_search_exec, trials_exec = parse_commandline()
 
 
 println("Defining functions...")
+flush(stdout)
 #########################
 # Define helper
 #########################
@@ -170,6 +172,8 @@ function grid_search_thread(data, param_grid, likelihood_fn = nothing,
       # Trial likelihoods will be a dict indexed by trial numbers
         all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                     return_trial_likelihoods = true,  sequential_model = sequential_model)
+        println(trial_likelihoods)
+        flush(stdout)
       else
         all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
       end
@@ -214,6 +218,8 @@ function grid_search_thread(data, param_grid, likelihood_fn = nothing,
       # Trial likelihoods will be a dict indexed by trial numbers
         all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                     return_trial_likelihoods = true,  sequential_model = sequential_model)
+      println(trial_likelihoods)
+      flush(stdout)
       else
         all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
       end
@@ -361,6 +367,8 @@ function grid_search_floop(data, param_grid, likelihood_fn = nothing,
     # Trial likelihoods will be a dict indexed by trial numbers
       all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                   return_trial_likelihoods = true,  sequential_model = sequential_model)
+      println(trial_likelihoods[])
+      flush(stdout)
     else
       all_nll[][cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
     end
@@ -510,6 +518,8 @@ function grid_search_floop2(data, param_grid, likelihood_fn = nothing,
     # Trial likelihoods will be a dict indexed by trial numbers
       all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll_floop(model, data, likelihood_fn, likelihood_args; 
                   return_trial_likelihoods = true,  sequential_model = sequential_model, executor = trials_exec)
+      println(trial_likelihoods[])
+      flush(stdout)
     else
       all_nll[][cur_grid_params] = compute_trials_nll_floop(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model, executor = trials_exec)
     end
@@ -605,6 +615,7 @@ end
 # Read in data
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
 println("Reading in data...")
+flush(stdout)
 data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
 data = data["1"]; # Sim data is saved with parcode "1"
 
@@ -622,6 +633,7 @@ fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bi
 #########################
 
 println("Selecting benchmark function...")
+flush(stdout)
 if grid_search_fn == "thread"
   if grid_search_exec == "thread"
     if trials_exec == "thread"
@@ -724,6 +736,7 @@ end
 #########################
 
 println("Starting benchmarking...")
+flush(stdout)
 output, b_time, b_mem = BenchmarkTools.@btimed f()
 
 #########################
@@ -731,6 +744,7 @@ output, b_time, b_mem = BenchmarkTools.@btimed f()
 #########################
 
 println("Done benchmarking! Starting output processing...")
+flush(stdout)
 base_path = "outputs/grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
 
 b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
@@ -761,6 +775,7 @@ end
 trial_posteriors_path = base_path * "trial_posteriors.csv"
 CSV.write(trial_posteriors_path, trial_posteriors_df)
 println("Done!")
+flush(stdout)
 
 #########################
 # Usage
@@ -791,4 +806,6 @@ println("Done!")
 # grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
 # grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
 
-# Todo: Progress/thread tracking
+# Todo: 
+# Progress/thread tracking
+# Intermediate saving

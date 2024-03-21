@@ -766,6 +766,7 @@ println("Done!")
 #########################
 
 # julia --project=../ --threads 4 grid_search_benchmarks.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ floop2 thread thread 
+# julia --project=../ --threads 4 grid_search_benchmarks.jl /central/groups/rnl/zenkavi/ADDM.jl/data/ floop2 thread thread 
 
 # 1000 trials - simulated
 # 25 x 25 x 25 = 15625 size param_grid
@@ -788,3 +789,5 @@ println("Done!")
 # grid_search_thread(..., sequential_model = false, threaded = true)
 # grid_search_floop(..., sequential_model = false, grid_exec = ThreadedEx()) 
 # grid_search_floop2(..., trials_exec = ThreadedEx(), grid_exec = ThreadedEx())
+
+# Todo: Progress/thread tracking

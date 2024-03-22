@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=05:00:00 # walltime
+#SBATCH --time=48:00:00 # walltime
 #SBATCH --job-name={GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}
 #SBATCH --nodes=1 # number of nodes
 #SBATCH --ntasks=1 # number of tasks

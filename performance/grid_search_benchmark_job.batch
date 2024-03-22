@@ -4,8 +4,8 @@
 #SBATCH --job-name={GRID_SEARCH_FN}_{GRID_SEARCH_EXEC}_{TRIALS_EXEC}
 #SBATCH --nodes=1 # number of nodes
 #SBATCH --ntasks=1 # number of tasks
-#SBATCH --cpus-per-task=28 # cores per task
-#SBATCH --mem-per-cpu=12G # memory per CPU core
+#SBATCH --cpus-per-task=16 # cores per task
+#SBATCH --mem-per-cpu=8G # memory per CPU core
 #SBATCH --mail-user=zenkavi@caltech.edu # email address
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint="cascadelake"

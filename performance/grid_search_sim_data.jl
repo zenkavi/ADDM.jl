@@ -42,9 +42,12 @@ CSV.write(dp * "sim_data_fix.csv", SimDataFixDf)
 
 # Create param_grid
 # d = 0.007, σ = 0.03, θ = .6
-ds = collect(.001:.001:.025);
-sigmas = collect(.01:.01:.25);
-thetas = collect(.12:.03:.85);
+# ds = collect(.001:.001:.025);
+# sigmas = collect(.01:.01:.25);
+# thetas = collect(.12:.03:.85);
+ds = collect(.001:.001:.02);
+sigmas = collect(.01:.01:.2);
+thetas = collect(.27:.03:.85);
 sim_data_grid = allcombinations(DataFrame, "d" => ds, "sigma" => sigmas, "theta" => thetas);
 
 # Save param_grid

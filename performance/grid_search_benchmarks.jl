@@ -172,8 +172,8 @@ function grid_search_thread(data, param_grid, likelihood_fn = nothing,
       # Trial likelihoods will be a dict indexed by trial numbers
         all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                     return_trial_likelihoods = true,  sequential_model = sequential_model)
-        println(trial_likelihoods)
-        flush(stdout)
+        # println(trial_likelihoods)
+        # flush(stdout)
       else
         all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
       end
@@ -218,8 +218,8 @@ function grid_search_thread(data, param_grid, likelihood_fn = nothing,
       # Trial likelihoods will be a dict indexed by trial numbers
         all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                     return_trial_likelihoods = true,  sequential_model = sequential_model)
-      println(trial_likelihoods)
-      flush(stdout)
+      # println(trial_likelihoods)
+      # flush(stdout)
       else
         all_nll[cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
       end
@@ -367,8 +367,8 @@ function grid_search_floop(data, param_grid, likelihood_fn = nothing,
     # Trial likelihoods will be a dict indexed by trial numbers
       all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args; 
                   return_trial_likelihoods = true,  sequential_model = sequential_model)
-      println(trial_likelihoods[])
-      flush(stdout)
+      # println(trial_likelihoods[])
+      # flush(stdout)
     else
       all_nll[][cur_grid_params] = ADDM.compute_trials_nll(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
     end
@@ -518,8 +518,8 @@ function grid_search_floop2(data, param_grid, likelihood_fn = nothing,
     # Trial likelihoods will be a dict indexed by trial numbers
       all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll_floop(model, data, likelihood_fn, likelihood_args; 
                   return_trial_likelihoods = true,  sequential_model = sequential_model, executor = trials_exec)
-      println(trial_likelihoods[])
-      flush(stdout)
+      # println(trial_likelihoods[])
+      # flush(stdout)
     else
       all_nll[][cur_grid_params] = compute_trials_nll_floop(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model, executor = trials_exec)
     end
@@ -621,7 +621,8 @@ data = data["1"]; # Sim data is saved with parcode "1"
 
 # Read in parameter space
 # fn = dp*"/sim_data_grid_tst.csv";
-fn = dp*"/sim_data_grid.csv";
+# fn = dp*"/sim_data_grid.csv";
+fn = dp*"/sim_data_grid2.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 

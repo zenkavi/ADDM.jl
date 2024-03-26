@@ -4,6 +4,7 @@ using Base.Threads
 using BenchmarkTools
 using CSV
 using DataFrames
+using Dates
 using FLoops
 
 #########################
@@ -271,7 +272,7 @@ end
 
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
 println("Reading in data...")
-# flush(stdout)
+flush(stdout)
 data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
 data = data["1"]; # Sim data is saved with parcode "1"
 
@@ -329,9 +330,10 @@ output, b_time, b_mem = BenchmarkTools.@btimed f()
 
 println("Done benchmarking! Starting output processing...")
 flush(stdout)
-base_path = "outputs/gs_floop_improvements_" * grid_search_exec * "_" * trials_exec * "_"
+base_path = "outputs/gs_floop_improvements_" * grid_search_exec * "_" * trials_exec * "_" * string(Dates.today()) * "_"
 
 b_time_df = DataFrame(:grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
+b_time_df[!, :nthreads] .= nthreads()
 b_time_path = base_path * "b_time.csv"
 CSV.write(b_time_path, b_time_df)
 

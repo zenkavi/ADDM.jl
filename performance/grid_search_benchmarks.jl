@@ -4,6 +4,7 @@ using Base.Threads
 using BenchmarkTools
 using CSV
 using DataFrames
+using Dates
 using FLoops
 
 #########################
@@ -746,9 +747,10 @@ output, b_time, b_mem = BenchmarkTools.@btimed f()
 
 println("Done benchmarking! Starting output processing...")
 flush(stdout)
-base_path = "outputs/grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_'
+base_path = "outputs/grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_' * string(Dates.today()) * "_"
 
 b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
+b_time_df[!, :nthreads] .= nthreads()
 b_time_path = base_path * "b_time.csv"
 CSV.write(b_time_path, b_time_df)
 

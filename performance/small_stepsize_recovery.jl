@@ -257,7 +257,7 @@ end
 # Run Benchmark
 #########################
 
-println("Starting benchmarking...")
+println("Starting benchmarking at " * string(now()))
 flush(stdout)
 output, b_time, b_mem = BenchmarkTools.@btimed f()
 
@@ -265,11 +265,12 @@ output, b_time, b_mem = BenchmarkTools.@btimed f()
 # Save outputs
 #########################
 
-println("Done benchmarking! Starting output processing...")
+println("Done benchmarking at " * string(now()))
+println("Starting output processing...")
 flush(stdout)
-base_path = "outputs/grid_search_" * grid_search_fn * '_' * grid_search_exec * '_' * trials_exec * '_' * string(now()) * "_"
+base_path = "outputs/small_stepsize_" * grid_search_exec * '_' * string(now()) * "_"
 
-b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :grid_search_exec => grid_search_exec, :trials_exec => trials_exec, :b_time => b_time, :b_mem => b_mem)
+b_time_df = DataFrame(:grid_search_exec => grid_search_exec, :b_time => b_time, :b_mem => b_mem)
 b_time_df[!, :nthreads] .= nthreads()
 b_time_path = base_path * "b_time.csv"
 CSV.write(b_time_path, b_time_df)

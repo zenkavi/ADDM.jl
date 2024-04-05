@@ -181,7 +181,7 @@ println("compute_trials_nll_floop (w likelihoods) = $(median(b6.times)/10^6)")
 
 
 # Usage
-# julia --project --threads 4 tmp/benchmarks/compute_nll_benchmark.jl
+# julia --project --threads 4 tmp/benchmarks/compute_trials_nll_benchmarks.jl
 
 # Output
 # compute_trials_nll (no likelihoods) = 97.078667

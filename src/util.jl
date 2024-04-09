@@ -142,23 +142,3 @@ function convert_param_text_to_symbol(model)
 
   return model
 end
-
-"""
-    BenchmarkTools.@btimed(args...)
-
-Wrapper for `BenchmarkTools` wrapper that saves outputs
-"""
-@eval BenchmarkTools macro btimed(args...)
-  _, params = prunekwargs(args...)
-  bench, trial, result = gensym(), gensym(), gensym()
-  trialmin, trialallocs = gensym(), gensym()
-  tune_phase = hasevals(params) ? :() : :($BenchmarkTools.tune!($bench))
-  return esc(quote
-      local $bench = $BenchmarkTools.@benchmarkable $(args...)
-      $BenchmarkTools.warmup($bench)
-      $tune_phase
-      local $trial, $result = $BenchmarkTools.run_result($bench)
-      local $trialmin = $BenchmarkTools.minimum($trial)
-      $result, $BenchmarkTools.time($trialmin), $BenchmarkTools.memory($trialmin)
-  end)
-end

@@ -127,6 +127,7 @@ end
 
   if return_trial_likelihoods
     return negative_log_likelihood, likelihoods
+    # return likelihoods[1]
   else
     return negative_log_likelihood
   end

@@ -1,5 +1,5 @@
 set -e
-for grid_search_fn in thread floop dagger serial
+for grid_search_fn in thread floop serial
 do
   for compute_trials_fn in thread floop dagger serial
   do

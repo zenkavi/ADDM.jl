@@ -1,40 +1,4 @@
 
-@everywhere function grid_search_dagger_thread(data, param_grid, likelihood_fn = nothing, 
-  fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-  likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
-  return_grid_nlls = false,
-  return_model_posteriors = false,
-  return_trial_posteriors = false,
-  model_priors = nothing,
-  likelihood_fn_module = Main,
-  sequential_model = false)
-
-end
-
-@everywhere function grid_search_dagger_floop(data, param_grid, likelihood_fn = nothing, 
-  fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-  likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
-  return_grid_nlls = false,
-  return_model_posteriors = false,
-  return_trial_posteriors = false,
-  model_priors = nothing,
-  likelihood_fn_module = Main,
-  sequential_model = false)
-
-end
-
-@everywhere function grid_search_dagger_dagger(data, param_grid, likelihood_fn = nothing, 
-  fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
-  likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
-  return_grid_nlls = false,
-  return_model_posteriors = false,
-  return_trial_posteriors = false,
-  model_priors = nothing,
-  likelihood_fn_module = Main,
-  sequential_model = false)
-
-end
-
 @everywhere function grid_search_dagger_serial(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
@@ -52,6 +16,7 @@ end
 
   # n_trials = length(data)
   # trial_likelihoods = Dict(k => Dict(zip(1:n_trials, zeros(n_trials))) for k in param_grid)
+  trial_likelihoods = EmptyDict()
   trial_likelihoods = DataFrame()
 
   #### START OF PARALLELIZABLE PROCESSES
@@ -61,30 +26,52 @@ end
     println(cur_grid_params)
     flush(stdout)
 
-    model, likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
+    cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
-    if return_model_posteriors
+    # if return_model_posteriors
     # Trial likelihoods will be a dict indexed by trial numbers
-      all_nll[cur_grid_params], trial_likelihoods[cur_grid_params] = Dagger.@spawn compute_trials_nll_serial(model, data, likelihood_fn, likelihood_args; 
-                  return_trial_likelihoods = true,  sequential_model = sequential_model)
+      # Dagger.@spawn CAN'T RETURN MULTIPLE OBJECTS?! OR ITERABLES?
+      # Maybe related https://github.com/JuliaParallel/Dagger.jl/issues/480
+      # cur_nll, cur_trial_likelihoods = Dagger.@spawn compute_trials_nll_serial(cur_model, data, cur_likelihood_fn, likelihood_args; return_trial_likelihoods = true)
+
+      # cur_nll, cur_trial_likelihoods = Dagger.spawn(compute_trials_nll_serial, cur_model, data, cur_likelihood_fn, likelihood_args; return_trial_likelihoods = true)      
+      # trial_likelihoods = merge!!(trial_likelihoods, Dict(cur_grid_params => cur_trial_likelihoods))
       
+      # # cur_trial_likelihoods = Dagger.@spawn compute_trials_nll_serial(cur_model, data, cur_likelihood_fn, likelihood_args; return_trial_likelihoods = true) #this works if only one likelihood value is returned
+      # cur_grid_params_dict = Dict(pairs(cur_grid_params))
+      # cur_grid_params_dict[:one_trial_likelihood] = cur_trial_likelihoods #Adding fetch here slowed everything down
+      # push!(trial_likelihoods, NamedTuple(cur_grid_params_dict))
+
+      # cur_nll = Dagger.@spawn compute_trials_nll_serial(cur_model, data, cur_likelihood_fn, likelihood_args) #works as below            
+      # cur_grid_params_dict = Dict(pairs(cur_grid_params))
+      # cur_grid_params_dict[:nll] = cur_nll #Adding fetch here slowed everything down
+      # push!(all_nll, NamedTuple(cur_grid_params_dict))
+
+
       # THIS CURRENTLY WON'T WORK FOR MODELS WITH DIFFERENT PARAMETERS
-      if save_intermediate
-        save_intermediate_likelihoods(trial_likelihoods[cur_grid_params], cur_grid_params)
-      end
+      # if save_intermediate
+      #   # This needs the first argument to be a dictionary
+      #   save_intermediate_likelihoods(cur_trial_likelihoods, cur_grid_params)
+      # end
       
-    else
-      all_nll[cur_grid_params] = Dagger.@spawn compute_trials_nll_serial(model, data, likelihood_fn, likelihood_args, sequential_model = sequential_model)
-    end
+    # else
+      cur_nll = Dagger.@spawn compute_trials_nll_serial(cur_model, data, cur_likelihood_fn, likelihood_args)
+      cur_grid_params_dict = Dict(pairs(cur_grid_params))
+      cur_grid_params_dict[:nll] = cur_nll #Adding fetch here slowed everything down
+      push!(all_nll, NamedTuple(cur_grid_params_dict))
+
+    # end
 
   end
+
+  all_nll.nll = Dagger.@spawn fetch.(all_nll.nll)
   
   #### END OF PARALLELIZABLE PROCESSES
 
   # Wrangle likelihood data and extract best pars
 
   # Extract best fit pars
-  best_fit_pars = argmin(all_nll)
+  best_fit_pars = all_nll[argmin(all_nll.nll),:]
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
@@ -94,30 +81,21 @@ end
   output[:best_pars] = best_pars
 
   if return_grid_nlls
-    # Add param info to all_nll
-    all_nll_df = DataFrame()
-    for (k, v) in all_nll
-      row = DataFrame(Dict(pairs(k)))
-      row.nll .= v
-      # vcat can bind rows with different columns
-      all_nll_df = vcat(all_nll_df, row, cols=:union)
-    end
-
-    output[:grid_nlls] = all_nll_df
+    output[:grid_nlls] = all_nll
   end
 
-  if return_model_posteriors
+  # if return_model_posteriors
 
-    trial_posteriors = get_trial_posteriors(data, param_grid, model_priors, trial_likelihoods)
+  #   trial_posteriors = get_trial_posteriors(data, param_grid, model_priors, trial_likelihoods)
 
-    if return_trial_posteriors
-      output[:trial_posteriors] = trial_posteriors
-    end
+  #   if return_trial_posteriors
+  #     output[:trial_posteriors] = trial_posteriors
+  #   end
 
-    model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
-    output[:model_posteriors] = model_posteriors
+  #   model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
+  #   output[:model_posteriors] = model_posteriors
 
-    end
+  #   end
 
   return output
 

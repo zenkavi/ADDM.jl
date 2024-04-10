@@ -84,7 +84,7 @@ end
 
 @everywhere include("dagger_benchmarks_grid_search_thread.jl")
 @everywhere include("dagger_benchmarks_grid_search_floop.jl")
-@everywhere include("dagger_benchmarks_grid_search_dagger.jl")
+# @everywhere include("dagger_benchmarks_grid_search_dagger.jl")
 @everywhere include("dagger_benchmarks_grid_search_serial.jl")
     
 
@@ -187,45 +187,6 @@ if grid_search_fn == "floop"
 
   if compute_trials_fn == "serial"
     f() = grid_search_floop_serial(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true)
-  end
-end
-
-# Case 3
-if grid_search_fn == "dagger"
-  if compute_trials_fn == "thread"
-    f() = grid_search_dagger_thread(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true)
-  end
-
-  if compute_trials_fn == "floop"
-    f() = grid_search_dagger_floop(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true)
-  end
-
-  if compute_trials_fn == "dagger"
-    f() = grid_search_dagger_dagger(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true)
-  end
-
-  if compute_trials_fn == "serial"
-    f() = grid_search_dagger_serial(data, param_grid, nothing, 
     fixed_params, 
     likelihood_args = my_likelihood_args, 
     return_grid_nlls = false,

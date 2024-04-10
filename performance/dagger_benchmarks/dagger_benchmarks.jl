@@ -96,6 +96,7 @@ end
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
 println("Reading in data...")
 flush(stdout)
+# data = ADDM.load_data_from_csv(dp*"sim_data_beh_tst.csv", dp*"sim_data_fix_tst.csv");
 data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
 data = data["1"]; # Sim data is saved with parcode "1"
 

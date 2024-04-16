@@ -85,6 +85,8 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   # These are used as the keys for the output Dicts as well
   for cur_grid_params in param_grid
     
+    ## ADD WARNING ON IF STEPSIZE RATIO IS GOOD FOR THE NOISE LEVEL BEING TESTED
+
     # If likelihood_fn is not defined as argument to the function 
     # it should be defined in the param_grid
     # Extract that info and create variable that contains executable function

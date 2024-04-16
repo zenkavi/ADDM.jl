@@ -36,7 +36,7 @@ end
   nModels = length(param_grid)
 
   # Define posteriors as a dictionary with models as keys and Dicts with trial numbers keys as values
-  trial_posteriors = Dict(k => Dict(zip(1:n_trials, zeros(n_trials))) for k in param_grid)
+  trial_posteriors = Dict(k => Dict(zip(1:nTrials, zeros(nTrials))) for k in param_grid)
 
   if isnothing(model_priors)          
     model_priors = Dict(zip(keys(trial_likelihoods), repeat([1/nModels], outer = nModels)))
@@ -89,7 +89,7 @@ end
   sort!(cur_df, :trial_num)
 
   # Save intermediate output
-  int_save_path = "outputs/dagger_benchmarks_" * grid_search_fn * '_' * compute_trials_fn * '_'
+  int_save_path = "../outputs/dagger_benchmarks_" * grid_search_fn * '_' * compute_trials_fn * '_'
   trial_likelihoods_path = int_save_path * "trial_likelihoods_int_save.csv"
   CSV.write(trial_likelihoods_path, cur_df, writeheader = !isfile(trial_likelihoods_path), append = true)
 end
@@ -116,8 +116,12 @@ end
 
   @threads for cur_grid_params in param_grid
 
-    println(cur_grid_params)
-    flush(stdout)
+    if save_intermediate
+      println(cur_grid_params)
+      flush(stdout)
+    end
+
+## ADD WARNING ON IF STEPSIZE RATIO IS GOOD FOR THE NOISE LEVEL BEING TESTED
 
     cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
@@ -172,7 +176,7 @@ end
       output[:trial_posteriors] = trial_posteriors
     end
 
-    model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
+    model_posteriors = Dict(k => trial_posteriors[k][n_trials] for k in keys(trial_posteriors))
     output[:model_posteriors] = model_posteriors
 
     end
@@ -202,8 +206,10 @@ end
 
   @threads for cur_grid_params in param_grid
 
-    println(cur_grid_params)
-    flush(stdout)
+    if save_intermediate
+      println(cur_grid_params)
+      flush(stdout)
+    end
 
     cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
@@ -258,7 +264,7 @@ end
       output[:trial_posteriors] = trial_posteriors
     end
 
-    model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
+    model_posteriors = Dict(k => trial_posteriors[k][n_trials] for k in keys(trial_posteriors))
     output[:model_posteriors] = model_posteriors
 
     end
@@ -269,7 +275,7 @@ end
 
 
 
-@everywhere function grid_search_thread_thread(data, param_grid, likelihood_fn = nothing, 
+@everywhere function grid_search_thread_dagger(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -290,8 +296,12 @@ end
 
   @threads for cur_grid_params in param_grid
 
-    println(cur_grid_params)
-    flush(stdout)
+## ADD WARNING ON IF STEPSIZE RATIO IS GOOD FOR THE NOISE LEVEL BEING TESTED
+
+    if save_intermediate
+      println(cur_grid_params)
+      flush(stdout)
+    end
 
     cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
@@ -346,7 +356,7 @@ end
       output[:trial_posteriors] = trial_posteriors
     end
 
-    model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
+    model_posteriors = Dict(k => trial_posteriors[k][n_trials] for k in keys(trial_posteriors))
     output[:model_posteriors] = model_posteriors
 
     end
@@ -376,8 +386,12 @@ end
 
   @threads for cur_grid_params in param_grid
 
-    println(cur_grid_params)
-    flush(stdout)
+    ## ADD WARNING ON IF STEPSIZE RATIO IS GOOD FOR THE NOISE LEVEL BEING TESTED
+
+    if save_intermediate
+      println(cur_grid_params)
+      flush(stdout)
+    end
 
     cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
@@ -432,7 +446,7 @@ end
       output[:trial_posteriors] = trial_posteriors
     end
 
-    model_posteriors = Dict(k => trial_posteriors[k][nTrials] for k in keys(trial_posteriors))
+    model_posteriors = Dict(k => trial_posteriors[k][n_trials] for k in keys(trial_posteriors))
     output[:model_posteriors] = model_posteriors
 
     end

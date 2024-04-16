@@ -40,16 +40,23 @@ end
 CSV.write(dp * "sim_data_beh.csv", SimDataBehDf)
 CSV.write(dp * "sim_data_fix.csv", SimDataFixDf)
 
-# Create param_grid
-# d = 0.007, σ = 0.03, θ = .6
+# Create and save param_grid
+# True params: d = 0.007, σ = 0.03, θ = .6
+
 # ds = collect(.001:.001:.025);
 # sigmas = collect(.01:.01:.25);
 # thetas = collect(.12:.03:.85);
-ds = collect(.001:.001:.02);
-sigmas = collect(.01:.01:.2);
-thetas = collect(.27:.03:.85);
+# sim_data_grid = allcombinations(DataFrame, "d" => ds, "sigma" => sigmas, "theta" => thetas);
+# CSV.write(dp * "sim_data_grid.csv", sim_data_grid)
+
+# ds = collect(.001:.001:.02);
+# sigmas = collect(.01:.01:.2);
+# thetas = collect(.27:.03:.85);
+# sim_data_grid = allcombinations(DataFrame, "d" => ds, "sigma" => sigmas, "theta" => thetas);
+# CSV.write(dp * "sim_data_grid2.csv", sim_data_grid)
+
+ds = collect(.001:.001:.015);
+sigmas = collect(.005:.005:.06);
+thetas = collect(0:.1:1);
 sim_data_grid = allcombinations(DataFrame, "d" => ds, "sigma" => sigmas, "theta" => thetas);
-
-# Save param_grid
-
-CSV.write(dp * "sim_data_grid.csv", sim_data_grid)
+CSV.write(dp * "sim_data_grid3.csv", sim_data_grid)

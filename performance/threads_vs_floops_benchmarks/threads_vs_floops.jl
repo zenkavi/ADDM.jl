@@ -5,7 +5,6 @@ using Distributed
 @everywhere using Base.Threads
 @everywhere using BenchmarkTools
 @everywhere using CSV
-@everywhere using Dagger
 @everywhere using DataFrames
 @everywhere using Dates
 @everywhere using FLoops
@@ -34,6 +33,7 @@ using Distributed
           help = "fourth positional argument; boolean for whether to use small test data"
           arg_type = String
           required = false
+          default = "false"
   end
 
   parsed_args = parse_args(s)
@@ -86,16 +86,17 @@ end
 # compute_trials_nll versions
 #########################
 
-# cd("./performance/dagger_benchmarks")
-@everywhere include("dagger_benchmarks_compute_trials.jl")
+# cd("./performance/threads_vs_floops_benchmarks")
+@everywhere include("threads_vs_floops_compute_trials.jl")
 
 #########################
 # grid_search versions
 #########################
 
-@everywhere include("dagger_benchmarks_grid_search_thread.jl")
-@everywhere include("dagger_benchmarks_grid_search_floop.jl")
-@everywhere include("dagger_benchmarks_grid_search_serial.jl")    
+@everywhere include("threads_vs_floops_utils.jl")
+@everywhere include("threads_vs_floops_grid_search_thread.jl")
+@everywhere include("threads_vs_floops_grid_search_floop.jl")
+@everywhere include("threads_vs_floops_grid_search_serial.jl")    
 
 #########################
 # Setup data and parameter space
@@ -110,7 +111,7 @@ if test
   fn = dp*"/sim_data_grid_tst.csv";
 else
   data = ADDM.load_data_from_csv(dp*"sim_data_beh.csv", dp*"sim_data_fix.csv");
-  fn = dp*"/sim_data_grid2.csv"; #8000 combinations
+  fn = dp*"/sim_data_grid3.csv"; # 1980 combinations
 end
 
 data = data["1"]; # Sim data is saved with parcode "1"
@@ -119,7 +120,7 @@ tmp = DataFrame(CSV.File(fn, delim=","));
 tmp[!,"likelihood_fn"] .= "ADDM.aDDM_get_trial_likelihood";
 param_grid = NamedTuple.(eachrow(tmp));
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.05);
+my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
 #########################
@@ -143,16 +144,6 @@ if grid_search_fn == "thread"
 
   if compute_trials_fn == "floop"
     f() = grid_search_thread_floop(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true,
-    save_intermediate = false)
-  end
-
-  if compute_trials_fn == "dagger"
-    f() = grid_search_thread_dagger(data, param_grid, nothing, 
     fixed_params, 
     likelihood_args = my_likelihood_args, 
     return_grid_nlls = false,
@@ -194,16 +185,6 @@ if grid_search_fn == "floop"
     save_intermediate = false)
   end
 
-  if compute_trials_fn == "dagger"
-    f() = grid_search_floop_dagger(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true,
-    save_intermediate = false)
-  end
-
   if compute_trials_fn == "serial"
     f() = grid_search_floop_serial(data, param_grid, nothing, 
     fixed_params, 
@@ -215,7 +196,7 @@ if grid_search_fn == "floop"
   end
 end
 
-# Case 4
+# Case 3
 if grid_search_fn == "serial"
   if compute_trials_fn == "thread"
     f() = grid_search_serial_thread(data, param_grid, nothing, 
@@ -229,16 +210,6 @@ if grid_search_fn == "serial"
 
   if compute_trials_fn == "floop"
     f() = grid_search_serial_floop(data, param_grid, nothing, 
-    fixed_params, 
-    likelihood_args = my_likelihood_args, 
-    return_grid_nlls = false,
-    return_model_posteriors = true,
-    return_trial_posteriors = true,
-    save_intermediate = false)
-  end
-
-  if compute_trials_fn == "dagger"
-    f() = grid_search_serial_dagger(data, param_grid, nothing, 
     fixed_params, 
     likelihood_args = my_likelihood_args, 
     return_grid_nlls = false,
@@ -273,7 +244,7 @@ output, b_time, b_mem = BenchmarkTools.@btimed f();
 println("Done benchmarking at " * string(now()))
 println("Starting output processing...")
 flush(stdout)
-base_path = "../outputs/dagger_benchmarks_" * grid_search_fn * '_' * compute_trials_fn * '_' * string(now()) * "_"
+base_path = "../outputs/threads_vs_floops_" * grid_search_fn * '_' * compute_trials_fn * '_' * string(now()) * "_"
 
 b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :compute_trials_fn => compute_trials_fn, :b_time => b_time, :b_mem => b_mem)
 b_time_df[!, :nthreads] .= nthreads()
@@ -312,4 +283,4 @@ flush(stdout)
 # Usage
 #########################
 
-# julia --project=../../ --threads 4 dagger_benchmarks.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread true
+# julia --project=../../ --threads 4 threads_vs_floops.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread true

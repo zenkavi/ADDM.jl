@@ -31,7 +31,6 @@ function parse_commandline()
           help = "fourth positional argument; number of times to run the function"
           arg_type = Int
           required = true
-          default = 25
       "test"
           help = "fifth positional argument; boolean for whether to use small test data"
           arg_type = String
@@ -293,3 +292,4 @@ flush(stdout)
 # julia --project=../../ --threads 4 threads_vs_floops.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread 10 true
 
 # Remote
+# julia --project=$JPROJ_PATH --threads $NUM_THREADS threads_vs_floops.jl $DATA_PATH thread thread 4 true

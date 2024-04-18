@@ -18,4 +18,4 @@ export JPROJ_PATH='/central/groups/rnl/zenkavi/ADDM.jl'
 
 module load julia/1.10.2 
 julia --project=$JPROJ_PATH -e 'import Pkg; Pkg.instantiate()'
-julia --project=$JPROJ_PATH --threads $NUM_THREADS threads_vs_floops.jl $DATA_PATH {GRID_SEARCH_FN} {COMPUTE_TRIALS_FN}
+julia --project=$JPROJ_PATH --threads $NUM_THREADS threads_vs_floops.jl $DATA_PATH {GRID_SEARCH_FN} {COMPUTE_TRIALS_FN} 25

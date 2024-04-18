@@ -1,4 +1,4 @@
-@everywhere function grid_search_floop_thread(data, param_grid, likelihood_fn = nothing, 
+function grid_search_floop_thread(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -56,6 +56,9 @@
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[][best_fit_pars]
 
   # Begin collecting output
   output = Dict()
@@ -91,7 +94,7 @@
 
 end
 
-@everywhere function grid_search_floop_floop(data, param_grid, likelihood_fn = nothing, 
+function grid_search_floop_floop(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -150,6 +153,9 @@ end
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[][best_fit_pars]
 
   # Begin collecting output
   output = Dict()
@@ -185,7 +191,7 @@ end
 
 end
 
-@everywhere function grid_search_floop_serial(data, param_grid, likelihood_fn = nothing, 
+function grid_search_floop_serial(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -244,6 +250,9 @@ end
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[][best_fit_pars]
 
   # Begin collecting output
   output = Dict()

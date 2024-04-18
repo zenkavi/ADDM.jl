@@ -1,19 +1,17 @@
-using Distributed
-
-@everywhere using ADDM
-@everywhere using ArgParse
-@everywhere using Base.Threads
-@everywhere using BenchmarkTools
-@everywhere using CSV
-@everywhere using DataFrames
-@everywhere using Dates
-@everywhere using FLoops
+using ADDM
+using ArgParse
+using Base.Threads
+using BenchmarkTools
+using CSV
+using DataFrames
+using Dates
+using FLoops
 
 #########################
 # Initialize arguments
 #########################
 
-@everywhere function parse_commandline()
+function parse_commandline()
   s = ArgParseSettings()
 
   @add_arg_table! s begin
@@ -29,8 +27,13 @@ using Distributed
           help = "third positional argument; compute_trials function"
           arg_type = String
           required = true
+      "n_bench"
+          help = "fourth positional argument; number of times to run the function"
+          arg_type = Int
+          required = true
+          default = 25
       "test"
-          help = "fourth positional argument; boolean for whether to use small test data"
+          help = "fifth positional argument; boolean for whether to use small test data"
           arg_type = String
           required = false
           default = "false"
@@ -40,19 +43,20 @@ using Distributed
   dp = parsed_args["dp"]
   gsf = parsed_args["gsf"]
   ctf = parsed_args["ctf"]
+  n_bench = parsed_args["n_bench"]
   test = parsed_args["test"]
 
-  return dp, gsf, ctf, test 
+  return dp, gsf, ctf, n_bench, test 
 end
 
 println("Parsing arguments...")
 flush(stdout)
-dp, grid_search_fn, compute_trials_fn, test = parse_commandline()
+dp, grid_search_fn, compute_trials_fn, n_bench, test = parse_commandline()
 if test == "true"
   test = true
 end
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
-# grid_search_fn = "grid"
+# grid_search_fn = "thread"
 # compute_trials_fn = "floop"
 # test = true
 
@@ -64,42 +68,59 @@ flush(stdout)
 #########################
 
 #########################
-# macro within BenchmarkTools for saving outputs
-#########################
-
-@eval BenchmarkTools macro btimed(args...)
-  _, params = prunekwargs(args...)
-  bench, trial, result = gensym(), gensym(), gensym()
-  trialmin, trialallocs = gensym(), gensym()
-  tune_phase = hasevals(params) ? :() : :($BenchmarkTools.tune!($bench))
-  return esc(quote
-      local $bench = $BenchmarkTools.@benchmarkable $(args...)
-      $BenchmarkTools.warmup($bench)
-      $tune_phase
-      local $trial, $result = $BenchmarkTools.run_result($bench)
-      local $trialmin = $BenchmarkTools.minimum($trial)
-      $result, $BenchmarkTools.time($trialmin), $BenchmarkTools.memory($trialmin)
-  end)
-end
-
-#########################
 # compute_trials_nll versions
 #########################
 
 # cd("./performance/threads_vs_floops_benchmarks")
-@everywhere include("threads_vs_floops_compute_trials.jl")
+include("threads_vs_floops_compute_trials.jl")
 
 #########################
 # grid_search versions
 #########################
 
-@everywhere include("threads_vs_floops_utils.jl")
-@everywhere include("threads_vs_floops_grid_search_thread.jl")
-@everywhere include("threads_vs_floops_grid_search_floop.jl")
-@everywhere include("threads_vs_floops_grid_search_serial.jl")    
+include("threads_vs_floops_utils.jl")
+include("threads_vs_floops_grid_search_thread.jl")
+include("threads_vs_floops_grid_search_floop.jl")
+include("threads_vs_floops_grid_search_serial.jl")
 
 #########################
-# Setup data and parameter space
+# Output saving function
+#########################
+
+function save_output(output, grid_search_fn, compute_trials_fn)
+
+  base_path = "../outputs/threads_vs_floops_" * grid_search_fn * '_' * compute_trials_fn * '_' * string(now()) * "_"
+
+  best_pars_path = base_path * "best_pars.csv"
+  CSV.write(best_pars_path, DataFrame(output[:best_pars]))
+
+  trial_posteriors_df = DataFrame()
+  for (k,v) in output[:trial_posteriors]
+    cur_df = DataFrame(Symbol(i) => j for (i, j) in pairs(v))
+
+    rename!(cur_df, :first => :trial_num, :second => :posterior)
+
+    # Unpack parameter info
+    for (a, b) in pairs(k)
+      cur_df[!, a] .= b
+    end
+
+    # Change type of trial num col to sort by
+    cur_df[!, :trial_num] = [parse(Int, (String(i))) for i in cur_df[!,:trial_num]]
+
+    sort!(cur_df, :trial_num)
+
+    # trial_posteriors_df = vcat(trial_posteriors_df, cur_df, cols=:union)
+    append!(trial_posteriors_df, cur_df, cols=:union)
+  end
+
+  trial_posteriors_path = base_path * "trial_posteriors.csv"
+  CSV.write(trial_posteriors_path, trial_posteriors_df)
+end
+
+
+#########################
+# Read in data and parameter space
 #########################
 
 # Read in data
@@ -124,7 +145,7 @@ my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01);
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
 #########################
-# Select benchmark function
+# Select function to benchmark
 #########################
 
 println("Selecting benchmark function...")
@@ -235,52 +256,36 @@ end
 
 println("Starting benchmarking at "* string(now()))
 flush(stdout)
-output, b_time, b_mem = BenchmarkTools.@btimed f();
 
-#########################
-# Save outputs
-#########################
+b_time_df = DataFrame();
+for i in 1:n_bench
+  t1 = now();
+  output = f();
+  t2 = now();
+  b_time = t2-t1;
 
-println("Done benchmarking at " * string(now()))
-println("Starting output processing...")
-flush(stdout)
+  if i==1
+    println("Saving output of first iteration...")
+    flush(stdout)
+    save_output(output, grid_search_fn, compute_trials_fn)
+  end
+
+  println("Iteration "* string(i) * " time: " * string(b_time))
+  flush(stdout)
+  push!(b_time_df, (;:grid_search_fn => grid_search_fn, :compute_trials_fn => compute_trials_fn, :b_time => b_time, :nthreads => nthreads()))
+end
+
 base_path = "../outputs/threads_vs_floops_" * grid_search_fn * '_' * compute_trials_fn * '_' * string(now()) * "_"
 
-b_time_df = DataFrame(:grid_search_fn => grid_search_fn, :compute_trials_fn => compute_trials_fn, :b_time => b_time, :b_mem => b_mem)
-b_time_df[!, :nthreads] .= nthreads()
 b_time_path = base_path * "b_time.csv"
 CSV.write(b_time_path, b_time_df)
 
-best_pars_path = base_path * "best_pars.csv"
-CSV.write(best_pars_path, DataFrame(output[:best_pars]))
-
-trial_posteriors_df = DataFrame()
-for (k,v) in output[:trial_posteriors]
-  cur_df = DataFrame(Symbol(i) => j for (i, j) in pairs(v))
-
-  rename!(cur_df, :first => :trial_num, :second => :posterior)
-
-  # Unpack parameter info
-  for (a, b) in pairs(k)
-    cur_df[!, a] .= b
-  end
-
-  # Change type of trial num col to sort by
-  cur_df[!, :trial_num] = [parse(Int, (String(i))) for i in cur_df[!,:trial_num]]
-
-  sort!(cur_df, :trial_num)
-
-  # trial_posteriors_df = vcat(trial_posteriors_df, cur_df, cols=:union)
-  append!(trial_posteriors_df, cur_df, cols=:union)
-end
-
-trial_posteriors_path = base_path * "trial_posteriors.csv"
-CSV.write(trial_posteriors_path, trial_posteriors_df)
-println("Done!")
+println("Done benchmarking at " * string(now()))
 flush(stdout)
 
 #########################
 # Usage
 #########################
 
-# julia --project=../../ --threads 4 threads_vs_floops.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread true
+# Local
+# julia --project=../../ --threads 4 threads_vs_floops.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread 10 true

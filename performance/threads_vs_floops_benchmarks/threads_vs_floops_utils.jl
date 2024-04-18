@@ -1,4 +1,4 @@
-@everywhere function setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module=Main)
+function setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module=Main)
   
   model = ADDM.aDDM()
   for (k,v) in fixed_params setproperty!(model, k, v) end
@@ -30,7 +30,7 @@
 
 end
 
-@everywhere function get_trial_posteriors(data, param_grid, model_priors, trial_likelihoods) 
+function get_trial_posteriors(data, param_grid, model_priors, trial_likelihoods) 
   # Process trial likelihoods to compute model posteriors for each parameter combination
   nTrials = length(data)
   nModels = length(param_grid)
@@ -72,7 +72,7 @@ end
   return trial_posteriors
 end
 
-@everywhere function save_intermediate_likelihoods(trial_likelihoods_for_grid_params, cur_grid_params)
+function save_intermediate_likelihoods(trial_likelihoods_for_grid_params, cur_grid_params)
   # Process intermediate output
   cur_df = DataFrame(Symbol(i) => j for (i, j) in pairs(trial_likelihoods_for_grid_params))
         

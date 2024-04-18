@@ -1,4 +1,4 @@
-@everywhere function grid_search_thread_thread(data, param_grid, likelihood_fn = nothing, 
+function grid_search_thread_thread(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -21,9 +21,12 @@
   # Get largest sigma from param_grid
   # Check if (timeStep/(approxStateStep^2)) < 1/(maxSigma^2)
   maxSigma = maximum([i.sigma for i in param_grid])
-  unstable = !(((timeStep/1000)/(approxStateStep^2)) < 1/(maxSigma^2))
+  unstable = !(((likelihood_args.timeStep/1000)/(likelihood_args.approxStateStep^2)) < 1/(maxSigma^2))
   if unstable
-    println("dt/(dx^2) < 1/(σ^2) not satisfied. Try reducing your timestep")
+    println("dt/(dx^2) < 1/(σ^2) not satisfied. Try reducing timestep.")
+    println("maxSigma = " * string(maxSigma))
+    println("timeStep = " * string((likelihood_args.timeStep/1000)) * " s")
+    println("stateStep = " * string(likelihood_args.approxStateStep))
   end
 
   #### START OF PARALLELIZABLE PROCESSES
@@ -62,6 +65,9 @@
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[best_fit_pars]
 
   # Begin collecting output
   output = Dict()
@@ -97,7 +103,7 @@
 
 end
 
-@everywhere function grid_search_thread_floop(data, param_grid, likelihood_fn = nothing, 
+function grid_search_thread_floop(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -150,6 +156,9 @@ end
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[best_fit_pars]
 
   # Begin collecting output
   output = Dict()
@@ -185,7 +194,7 @@ end
 
 end
 
-@everywhere function grid_search_thread_serial(data, param_grid, likelihood_fn = nothing, 
+function grid_search_thread_serial(data, param_grid, likelihood_fn = nothing, 
   fixed_params = Dict(:θ=>1.0, :η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0); 
   likelihood_args = (timeStep = 10.0, approxStateStep = 0.1), 
   return_grid_nlls = false,
@@ -240,6 +249,9 @@ end
   best_pars = Dict(pairs(best_fit_pars))
   best_pars = merge(best_pars, fixed_params)
   best_pars = ADDM.convert_param_text_to_symbol(best_pars)
+  best_pars[:timeStep] = likelihood_args.timeStep
+  best_pars[:stateStep] = likelihood_args.approxStateStep
+  best_pars[:nll] = all_nll[best_fit_pars]
 
   # Begin collecting output
   output = Dict()

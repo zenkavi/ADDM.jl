@@ -1,4 +1,4 @@
-@everywhere function compute_trials_nll_threads(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
+function compute_trials_nll_threads(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
   return_trial_likelihoods = false, sequential_model = false)
 
   n_trials = length(data)
@@ -33,7 +33,7 @@
   end
 end
 
-@everywhere function compute_trials_nll_floop(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
+function compute_trials_nll_floop(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
   return_trial_likelihoods = false, sequential_model = false, executor = ThreadedEx())
 
   n_trials = length(data)
@@ -64,7 +64,7 @@ end
   end
 end
 
-@everywhere function compute_trials_nll_serial(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
+function compute_trials_nll_serial(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
   return_trial_likelihoods = false, sequential_model = false)
 
   n_trials = length(data)

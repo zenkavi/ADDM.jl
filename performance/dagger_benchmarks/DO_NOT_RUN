@@ -1,3 +1,0 @@
-Scripts in this directory were intended to compare performance of parallelization using `Dagger.jl` to `Base.Threads` and `Floops` but in small tests Dagger did not outperform these options so the full scale benchmarks WERE NOT RUN. 
-
-AS IT IS, THE DAGGER FUNCTIONS ARE BUGGY AND WILL NOT RUN.

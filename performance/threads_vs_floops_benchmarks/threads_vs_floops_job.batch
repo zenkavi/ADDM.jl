@@ -12,7 +12,7 @@
 #SBATCH --output=/central/groups/rnl/zenkavi/.out/threads_vs_floops_gs_{GRID_SEARCH_FN}_ct_{COMPUTE_TRIALS_FN}_%j.out
 #SBATCH --error=/central/groups/rnl/zenkavi/.err/threads_vs_floops_gs_{GRID_SEARCH_FN}_ct_{COMPUTE_TRIALS_FN}_%j.err
 
-export NUM_THREADS=36
+export NUM_THREADS=24
 export DATA_PATH='/central/groups/rnl/zenkavi/ADDM.jl/data/'
 export JPROJ_PATH='/central/groups/rnl/zenkavi/ADDM.jl'
 

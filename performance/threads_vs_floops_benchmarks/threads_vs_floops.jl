@@ -54,6 +54,8 @@ flush(stdout)
 dp, grid_search_fn, compute_trials_fn, n_bench, test = parse_commandline()
 if test == "true"
   test = true
+else
+  test = false
 end
 # dp = "/Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/"
 # grid_search_fn = "thread"
@@ -289,3 +291,5 @@ flush(stdout)
 
 # Local
 # julia --project=../../ --threads 4 threads_vs_floops.jl /Users/zenkavi/Documents/RangelLab/aDDM-Toolbox/ADDM.jl/data/ thread thread 10 true
+
+# Remote

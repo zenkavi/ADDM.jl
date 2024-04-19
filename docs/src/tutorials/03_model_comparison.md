@@ -36,7 +36,7 @@ fn = "../../../data/Krajbich_grid3.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
+my_likelihood_args = (timeStep = 10.0, stateStep = 0.1);
 
 output = ADDM.grid_search(subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, 
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
@@ -242,8 +242,8 @@ The comparison of these two generative processes is operationalized by specifyin
 First we read in the file that defines the parameter space for the first model, the standard aDDM.
 
 ```@repl 3
-fn = "../../../data/Krajbich_grid3.csv";
-tmp = DataFrame(CSV.File(fn, delim=","));
+fn1 = "../../../data/Krajbich_grid3.csv";
+tmp = DataFrame(CSV.File(fn1, delim=","));
 tmp.likelihood_fn .= "ADDM.aDDM_get_trial_likelihood";
 param_grid1 = NamedTuple.(eachrow(tmp))
 ```
@@ -260,8 +260,8 @@ fn_module = [meth.module for meth in methods(my_likelihood_fn)][1]
 Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. 
 
 ```@repl 3
-fn = "../../../data/custom_model_grid.csv";
-tmp = DataFrame(CSV.File(fn, delim=","));
+fn2 = "../../../data/custom_model_grid.csv";
+tmp = DataFrame(CSV.File(fn2, delim=","));
 tmp.likelihood_fn .= "my_likelihood_fn";
 param_grid2 = NamedTuple.(eachrow(tmp));
 
@@ -276,7 +276,7 @@ param_grid = vcat(param_grid1, param_grid2)
 With this expanded `param_grid` that includes information on the different likelihood functions we call the `ADDM.grid_search` function setting the third position argument to `nothing`. This argument is where we define the likelihood function in the case of a single model but now this is specified in the `param_grid`.
 
 ```@repl 3
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
+my_likelihood_args = (timeStep = 10.0, stateStep = 0.1);
   
 output = ADDM.grid_search(subj_data, param_grid, nothing,
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 

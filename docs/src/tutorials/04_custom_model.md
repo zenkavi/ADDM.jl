@@ -127,7 +127,7 @@ include("my_likelihood_fn.jl"); nothing # hide
 
 ```julia
 function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number = 10.0, 
-                                   approxStateStep::Number = 0.1)
+                                   stateStep::Number = 0.1)
     
     [...]
 
@@ -171,7 +171,7 @@ param_grid = NamedTuple.(eachrow(tmp));
 ```@repl 4
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.1);
+my_likelihood_args = (timeStep = 10.0, stateStep = 0.1);
 
 output = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 

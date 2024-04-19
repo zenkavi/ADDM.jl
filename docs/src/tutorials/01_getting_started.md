@@ -138,10 +138,10 @@ sort!(all_nll_df, [:nll])
 
 You might have noticed that the grid search did not identify the true parameters (`d = 0.007, σ = 0.03, θ = .6`) as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization.
 
-The default stepsizes are defined as `timeStep = 10.0, approxStateStep = 0.1`. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
+The default stepsizes are defined as `timeStep = 10.0, stateStep = 0.1`. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
 
 ```@repl 1
-my_likelihood_args = (timeStep = 10.0, approxStateStep = 0.01)
+my_likelihood_args = (timeStep = 10.0, stateStep = 0.01)
 
 output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args, return_grid_nlls = true);
 

@@ -127,7 +127,7 @@ Write out trial likelihoods as soon as they are computed for a given parameter c
   from which the function is run (creates it if needed). 
 - `fn`: File name for the saved output. ".csv" will be appended to this string.
 """
-function save_intermediate_likelihoods(trial_likelihoods_for_grid_params, cur_grid_params, save_path="./outputs/", fn = "trial_likelihoods_int_save")
+function save_intermediate_likelihoods_fn(trial_likelihoods_for_grid_params, cur_grid_params, save_path="./outputs/", fn = "trial_likelihoods_int_save")
   
   # Process intermediate output
   cur_df = DataFrame(Symbol(i) => j for (i, j) in pairs(trial_likelihoods_for_grid_params))
@@ -220,7 +220,7 @@ Extract maximum likelihood estimate from `all_nll`
 - `best_pars`: MLE amongst the parameter combinations tried in `all_nll` for step sizes specified in 
   `likelihood_args`
 """
-function get_mle(all_nll, likelihood_args)
+function get_mle(all_nll, likelihood_args, fixed_params)
 
   best_fit_pars = argmin(all_nll)
   best_pars = Dict(pairs(best_fit_pars))
@@ -299,7 +299,7 @@ Compute the likelihood of either observed or simulated data for all parameter co
 - `save_intermediate_likelihoods`: Default `false`. If true, will crate a csv containing the likelihoods for each 
   trial after it is computed for a given parameter combination. Could be useful if doing a large parameter sweep 
   and are worried about the job terminating unexpectedly. Job could be restarted for parameter combinations, for 
-  which the trial likelihoods have not been saved, instead of all parameter combinations.
+  which the trial likelihoods have not been saved, instead of all parameter combinations. 
 - `noise_param_name`: Default `"sigma"`. String specifying the name of the noise parameter in the model. Used 
   to check stability criterion for Forward Euler.
 
@@ -323,7 +323,8 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   return_model_posteriors = false,
   return_trial_posteriors = false,
   save_intermediate_likelihoods = false,
-  intermediate_likelihood_path="./outputs", 
+  intermediate_likelihood_path= "./outputs/",
+  intermediate_likelihood_fn= "trial_likelihoods_int_save",
   noise_param_name = "sigma")
 
   # Indexed with model param information instead of param_grid rows using NamedTuple keys.
@@ -337,7 +338,7 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   # Ref is an allocation for FLoops.jl
   n_trials = length(data)
   trial_likelihoods = Ref(Dict(k => Dict(zip(1:n_trials, zeros(n_trials))) for k in param_grid))
-  
+
   # Make sure param_grid has all param names in all entries
   param_grid = match_param_grid_keys(param_grid)
 
@@ -363,13 +364,13 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     # Setup the parameter container and the likelihood function
     cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
-    if return_model_posteriors
+    if (return_model_posteriors || save_intermediate_likelihoods)
     # Trial likelihoods will be a dict indexed by trial numbers
       all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args; 
                   return_trial_likelihoods = true,  sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
 
       if save_intermediate_likelihoods
-        save_intermediate_likelihoods(trial_likelihoods[][cur_grid_params], cur_grid_params, intermediate_likelihood_path)
+        save_intermediate_likelihoods_fn(trial_likelihoods[][cur_grid_params], cur_grid_params, intermediate_likelihood_path, intermediate_likelihood_fn)
       end
       
     else
@@ -382,7 +383,7 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
 
   # Begin collecting output
   output = Dict()
-  output[:mle] = get_mle(all_nll[], likelihood_args)
+  output[:mle] = get_mle(all_nll[], likelihood_args, fixed_params)
 
   if return_grid_nlls
     # Add param info to all_nll

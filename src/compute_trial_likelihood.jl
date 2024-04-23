@@ -17,7 +17,7 @@ Returns:
 - The likelihood obtained for the given trial and model.
 """
 function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10.0, 
-                                   stateStep::Number = 0.01)
+                                   stateStep::Number = 0.01, debug = false)
     
     # Iterate over the fixations and discount the non-decision time.
     if model.nonDecisionTime > 0
@@ -174,7 +174,11 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
         end
     end
     
-    return likelihood
+    if debug
+      return (likelihood, prStates, probUpCrossing, probDownCrossing)
+    else
+      return likelihood
+    end
 end
 
 """

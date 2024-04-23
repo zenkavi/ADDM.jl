@@ -88,7 +88,7 @@ function update_ticks_guides(d::KW, labs, i, j, n)
     d[:yguide] = (j == 1 ? _cycle(labs, i) : "")
 end
 
-@recipe function f(mpp::MargPostPlot)
+@recipe function f(mpp::Marginal_Posterior_Plot)
     # Wrangle input data of marginal posteriors
     mps = mpp.args[1]
     n = 0

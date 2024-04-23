@@ -7,21 +7,20 @@ In this tutorial we will introduce some of the core functionality of the toolbox
 We begin with loading the packages we'll use in this tutorial.
 
 ```@repl 1
-using ADDM
-using CSV
-using DataFrames
+using ADDM, CSV, DataFrames, DataFramesMeta
+using Plots, StatsPlots
 ```
 
 !!! note
 
-    Note that the `CSV` and `DataFrames` modules must be loaded beforehand. These are dependencies for the ADDM module *but* the precompiled module gives access to these dependencies only in the scope of ADDM. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but directly calling functions from these packages would not without importing these modules to the current scope.    
+    Note that the `CSV` and `DataFrames` modules must be loaded in addition to `ADDM`. These are dependencies for the `ADDM` module *but* the precompiled module gives access to these dependencies only in the scope of `ADDM`. In other words, `ADDM.load_data_from_csv` that requires both of these packages would still work but directly calling functions from these packages would not without importing these modules to the current scope.    
 
 
 ## Parameter recovery on simulated data
 
 ### Define model
 
-The first component of the toolbox is a model container. This is a key-value pair mapping of parameter names to parameter values. It is a specific kind of dictionary of class `ADDM.aDDM`. We can create a model container using the `ADDM.define_model` function.
+The first component of the toolbox is a parameter container for the model class. This is a key-value pair mapping of parameter names to parameter values. It is a specific kind of dictionary of class `ADDM.aDDM`. We can create a model container using the `ADDM.define_model` function.
 
 ```@repl 1
 MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, 
@@ -30,7 +29,7 @@ MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1,
 
 ### Define stimuli
 
-The second ingreadient to simulating data is to define stimuli. For this class of models this consists of values associated with the options over which a decision is made. The stimuli should eventually be arranged into a `NamedTuple` with required field names (case sensitive): `valueLeft` and `valueRight`. There are several ways of defining the stimuli within this constraints. Below are a few examples. 
+The second ingredient to simulating data is to define stimuli. For the pre-defined model in the module, stimuli consist of values associated with the options over which a decision is made. The stimuli should eventually be arranged into a `NamedTuple` with required field names (case sensitive): `valueLeft` and `valueRight`. There are several ways of defining the stimuli within this constraints. Below are a few examples. 
 
 **Option 1: Load stimuli with corresponding fixation data**
 
@@ -38,11 +37,14 @@ The toolbox comes with [some datasets](https://github.com/aDDM-Toolbox/ADDM.jl/t
 
 `ADDM.load_data_from_csv()` expects columns `parcode`,`trial`, `rt` (optional), `choice` (optional), `item_left`, `item_right` in the CSVs and convert `item_left` and`item_right` to `valueLeft` and `valueRight`. It organizes both the behavioral and the fixation data as a dictionary of `ADDM.Trial` objects indexed by subject. 
 
-Here, we are reading in empirical data that comes with the package but we will not be making use of the observed choices and response times. The empirical data is only used to extract value difference information to index the fixation data correctly. The choices and response times will be simulated below based on the parameters we specified above.
+Here, we are reading in empirical data that comes with the package but we will not be making use of the observed choices and response times. This is specified with the `stimsOnly` argument. The empirical data is only used to extract value difference information to index the fixation data correctly. The choices and response times will be simulated below based on the parameters we specified above.
 
 ```@repl 1
-data = ADDM.load_data_from_csv("../../../data/stimdata.csv", "../../../data/fixations.csv"; stimsOnly = true);
+data_path = "../../../data/"
+data = ADDM.load_data_from_csv(data_path * "stimdata.csv", data_path * "fixations.csv"; stimsOnly = true);
 ```
+
+`data` is organized as a dictionary with keys corresponding to subject id's and values of arrays containing `ADDM.Trial`s for each subject. Since we are only interested in the values associated with the stimuli, we specify the number of trials we want to simulate (`nTrials`) and extract that many trials' value information from the data as `MyStims`.
 
 ```@repl 1
 nTrials = 1400;
@@ -51,13 +53,17 @@ MyStims = (valueLeft = reduce(vcat, [[i.valueLeft for i in data[j]] for j in key
 
 **Option 2: Read in from CSV**  
 
+Stimuli can also be read in directly from a file. This approach is simpler to define only the stimuli but would require additional steps to define and organize fixation data.
+
 ```
-fn = "../../../data/rawstims.csv"
+fn = data_path * "rawstims.csv"
 tmp = DataFrame(CSV.File(fn, delim=","))
 MyStims = (valueLeft = tmp.valueLeft, valueRight = tmp.valueRight)
 ```
 
 **Option 3: Create random stimuli**
+
+Alternatively, one can simulate stimuli with random values. Similar to reading in stimulus values directly, this approach would also require additional steps to defne and organize fixation data.
 
 !!! note
 
@@ -70,7 +76,7 @@ MyStims = (valueLeft = randn(1000), valueRight = randn(1000))
 
 ### Define fixation data
 
-The last ingredient to simulate data is fixation patterns. These are necessary because the distinguishing feature of the aDDM is its ability to use eyetracking data to account for attentional biases in choice behavior.
+The last ingredient to simulate data is fixation patterns. These are necessary because the distinguishing feature of the aDDM is its ability to use eyetracking data to account for attentional biases in choice behavior. Importantly, aDDM treats fixation data as exogenous. This means, that the model does not describe how the fixation patterns arise, but only takes them as given to examine their effects on choice behavior.
 
 The toolbox has a specific structure for fixation data organized in the  [`FixationData`](https://addm-toolbox.github.io/ADDM.jl/dev/apireference/#Fixation-data) type. This type organizes empirical fixations to distributions conditional on fixation type (first, second etc.) and value difference.
 
@@ -88,7 +94,7 @@ MyFixationData = ADDM.process_fixations(data, fixDistType="fixation", valueDiffs
 
 ### Simulate data
 
-Finally, we define additional arguments for aDDM trial simulator (e.g. fixation data, time step for simulations). Note these need to be specified as a `NamedTuple`, and must have at least two elements. Otherwise it tries to apply `iterate` to the single element which would likely end with a  `MethodError`. In this example I specify `timeStep` and `cutoff` in addition to the  only required argument without a default `fixationData` to avoid this.
+Finally, we define additional arguments for the second component of the model, the trial simulator. Here, these are the fixation data, time step for simulations and the maximum length a trial is allowed (in ms). These arguments need to be specified as a `NamedTuple`, and must have at least two elements. Otherwise the function tries to apply `iterate` to the single element which would likely end with a  `MethodError`. In this example, we specify `timeStep` and `cutoff` in addition to the  only required argument without a default `fixationData` to avoid this.
 
 ```@repl 1
 MyArgs = (timeStep = 10.0, cutOff = 20000, fixationData = MyFixationData);
@@ -102,23 +108,23 @@ SimData = ADDM.simulate_data(MyModel, MyStims, ADDM.aDDM_simulate_trial, MyArgs)
 
 ### Recover parameters using a grid search
 
-Now that we have simulated data with known parameters we can use the likelihood function to invert the model and recover those parameters from the data.
+Now that we have simulated data with known parameters we can use the third component of the module, the likelihood function to invert the model and recover those parameters from the data.
 
-The work horse function for this is `ADDM.grid_search`. It computes the negative log likelihood for each parameter combinations specified in `param_grid`. The data are specified in the first positional argument and the likelihood function in the third. The second argument is for the parameter space, `param_grid`. This is specified as a dictionary of named tuples, where the keys identify different models and the values are named tuples mapping parameters names to parameter values.
+The built-in optimization algorithm function for this is `ADDM.grid_search`. It computes the sum of negative log likelihood across all trials in the data, for each parameter combination specified in `param_grid`. The parameter space defined in `param_grid` is organized as an array of `NamedTuple`s indicating the parameter names and their specific values for each combination. For this toy example, the parameter space consists of 27 parameter combinations.
 
 ```@repl 1
-fn = "../../../data/addm_grid.csv";
+fn = data_path * "addm_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp))
 ```
 
-Having defined the parameter space we can compute the likelihood of the data for each point in it and select the combination that has the highest likelihood.
+Having defined the parameter space, we can compute the sum of negative log likelihoods (NLL) for each data point and select the parameter combination with the lowest NLL, which is equivalent to maximizing the likelihood. This combination of parameters is called the maximum likelihood estimate, or the MLE. `ADDM.grid_search` expects the data, the parameter space, the likelihood function and any fixed parameters for the model as its positional arguments. Additionaly, as a keyword argument, one can specify `likelihood_args` for values that should be passed onto the likelihood function. Here, we specify the `timeStep` and the `stateStep` for solving the Fokker-Planck Equation. The function returns an `output` dictionary with various components depending on additional arguments that are detailed in other tutorials and the API Reference.
 
 ```@repl 1
-output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0); return_grid_nlls = true);
+output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0); likelihood_args = (timeStep = 10.0, stateStep = 0.1), return_grid_nlls = true);
 
-best_pars = output[:best_pars];
-all_nll_df =  = output[:grid_nlls];
+mle = output[:mle];
+all_nll_df = output[:grid_nlls];
 ```
 
 Below we display the sum of negative log likelihoods for each parameter combination.
@@ -136,19 +142,80 @@ sort!(all_nll_df, [:nll])
     CSV.write(output_path, all_nll_df)
     ```
 
-You might have noticed that the grid search did not identify the true parameters (`d = 0.007, σ = 0.03, θ = .6`) as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization.
-
-The default stepsizes are defined as `timeStep = 10.0, stateStep = 0.1`. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
+You might have noticed that the grid search did not identify the true parameters (`d = 0.007, σ = 0.03, θ = .6`) as the ones with the highest likelihood. This highlights the importance of choosing good stepsizes for the temporal and spatial discretization. Let's reduce the spatial step size and see if we can recover the corect parameter combination.
 
 ```@repl 1
 my_likelihood_args = (timeStep = 10.0, stateStep = 0.01)
 
-output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args, return_grid_nlls = true);
+output = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args=my_likelihood_args);
 
-best_pars = output[:best_pars];
-all_nll_df =  = output[:grid_nlls];
-
-sort!(all_nll_df, [:nll])
+mle = output[:mle];
+mle
 ```
 
 Success! Reducing the state step size was sufficient to recover the true parameter combination for the simulated dataset.
+
+## Understanding step size effects
+
+Ok, but what happened there?
+
+We can look at a few things. 
+
+Save intermediate likelihoods for all trials with stepSize = .1 vs .01 for the correct and incorrect parameters
+
+```@repl 1
+param_grid = [(d = 0.007, sigma = 0.03, theta = 0.6), (d = 0.007, sigma = 0.05, theta = 0.6)];
+
+output_large = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args = (timeStep = 10.0, stateStep = 0.1), save_intermediate_likelihoods = true , intermediate_likelihood_path="./outputs/", intermediate_likelihood_fn="large_stateStep_likelihoods");
+
+output_small = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args = (timeStep = 10.0, stateStep = 0.01), save_intermediate_likelihoods = true, intermediate_likelihood_path="./outputs/", intermediate_likelihood_fn="small_stateStep_likelihoods");
+
+fns = ["large", "small"];
+
+trial_likelihoods_for_sigmas = DataFrame();
+for fn in fns
+  trial_likelihoods = DataFrame(CSV.File("./outputs/"* fn *"_stateStep_likelihoods.csv", delim=","))
+  cur_tlfs = unstack(trial_likelihoods, :trial_num, :sigma, :likelihood)
+  cur_tlfs[!, :stateStep] .= fn * " stateStep"
+  trial_likelihoods_for_sigmas = vcat(trial_likelihoods_for_sigmas, cur_tlfs)
+end
+rename!(trial_likelihoods_for_sigmas, [Symbol(0.05), Symbol(0.03)]  .=> [:incorrect_sigma, :correct_sigma])
+
+ax_lims = (minimum(vcat(trial_likelihoods_for_sigmas.incorrect_sigma, trial_likelihoods_for_sigmas.correct_sigma)), maximum(vcat(trial_likelihoods_for_sigmas.incorrect_sigma, trial_likelihoods_for_sigmas.correct_sigma)))
+
+@df trial_likelihoods_for_sigmas scatter(:correct_sigma, :incorrect_sigma,
+                                          xlabel = "Likelihoods for true parameters", 
+                                          ylabel = "Likelihoods for incorrect parameters", 
+                                          # legend = false,
+                                          lim = ax_lims,
+                                          group = :stateStep,
+                                          m = (0.5, [:x :+], 4))
+Plots.abline!(1, 0, line=:dash, color=:black, label="")
+
+```
+
+Pick a few trials where the likelihoods differ a lot between the correct and incorrect parameters. Use the debug option in the `aDDM_get_trial_likelihood` to plot the propogation of the probability distribution across timeSteps
+
+
+```@repl 1
+# make new column for the difference in likelihoods for correct vs incorrect sigma 
+@transform!(trial_likelihoods_for_sigmas, :diff_likelihood = :incorrect_sigma - :correct_sigma)
+
+# order by that difference column
+@orderby(trial_likelihoods_for_sigmas, -:diff_likelihood)
+
+# Pick top 4 trials (or maybe just one)
+diff_trial_nums = [1179];
+
+# extract these from the data
+diff_trials = SimData[diff_trial_nums];
+
+# Use aDDM_get_trial_likelihood with debug = true to get probStates and probUp and 
+correct_model = MyModel
+incorrect_model = ADDM.define_model(d = 0.007, σ = 0.05, θ = .6, barrier = 1, 
+                decay = 0, nonDecisionTime = 100, bias = 0.0)
+
+likelihood, prStates, probUpCrossing, probDownCrossing = ADDM.aDDM_get_trial_likelihood(;model = correct_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.1, debug = true)
+
+# Plot probStates for each trial with small vs large stateStep for correct and incorrect sigma 
+```

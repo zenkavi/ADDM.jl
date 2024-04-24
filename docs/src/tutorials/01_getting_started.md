@@ -8,7 +8,8 @@ We begin with loading the packages we'll use in this tutorial.
 
 ```@repl 1
 using ADDM, CSV, DataFrames, DataFramesMeta
-using Plots, StatsPlots
+using Plots, StatsPlots, Random
+Random.seed!(38435)
 ```
 
 !!! note
@@ -205,7 +206,7 @@ Pick a few trials where the likelihoods differ a lot between the correct and inc
 @orderby(trial_likelihoods_for_sigmas, -:diff_likelihood)
 
 # Pick top 4 trials (or maybe just one)
-diff_trial_nums = [1179];
+diff_trial_nums = [@orderby(trial_likelihoods_for_sigmas, -:diff_likelihood)[1,:trial_num]];
 
 # extract these from the data
 diff_trials = SimData[diff_trial_nums];
@@ -215,7 +216,19 @@ correct_model = MyModel
 incorrect_model = ADDM.define_model(d = 0.007, σ = 0.05, θ = .6, barrier = 1, 
                 decay = 0, nonDecisionTime = 100, bias = 0.0)
 
+
+
 likelihood, prStates, probUpCrossing, probDownCrossing = ADDM.aDDM_get_trial_likelihood(;model = correct_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.1, debug = true)
+
+curMax = maximum(vcat(probUpCrossing, probDownCrossing))
+likelihoodLims = (0, curMax)
+
+p = state_space_plot(prStates, probUpCrossing, probDownCrossing, 10, 0.1, likelihoodLims)
+
+# Make these into one function
+hline!(p[2], [1], color=:red, lw=10)
+hline!(p[2], [-1], color=:red, lw = 10)
+
 
 # Plot probStates for each trial with small vs large stateStep for correct and incorrect sigma 
 ```

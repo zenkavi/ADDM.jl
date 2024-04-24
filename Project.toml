@@ -1,6 +1,6 @@
 name = "ADDM"
 uuid = "66984a97-c2c2-48b8-bda2-108550fc7e6f"
-authors = ["Lynn Yang <lynnyang@caltech.edu>", "Zeynep Enkavi <zenkavi@caltech.edu>"]
+authors = ["Zeynep Enkavi <zenkavi@caltech.edu>", "Lynn Yang <lynnyang@caltech.edu>"]
 version = "1.0.0-DEV"
 
 [deps]

@@ -1,5 +1,5 @@
 Summary of how Wenning implements `optim` with a likelihood function
 
-```@repl 6
+```@repl 7
 
 ```

@@ -1,11 +1,13 @@
 name: DockerImage
 
 on:
-  push:
-    paths:
-      - 'Dockerfile'
-      - 'Project.toml'
-      - 'src/**'
+  # push:
+  #   paths:
+  #     - 'Dockerfile'
+  #     - 'Project.toml'
+  #     - 'src/**'
+  pull_request:
+    types: [closed]
 
 env:
   REGISTRY_IMAGE: rnlcaltech/addm-toolbox

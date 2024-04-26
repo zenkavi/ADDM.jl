@@ -86,8 +86,8 @@ julia> Pkg.add("ADDM")
 There are a few ways to get started with ADDM.jl:
 
  * Become familiar with the modeling framework described in [Krajbich et al. (2010)](https://www.nature.com/articles/nn.2635)  
- * Become familiar with algorithm used for parameter estimation [Tavares et al. (2017)](https://www.frontiersin.org/articles/10.3389/fnins.2017.00468/full)  
- * Read the [introductory tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/getting_started/)
+ * Become familiar with algorithm used for likelihood computation in [Tavares et al. (2017)](https://www.frontiersin.org/articles/10.3389/fnins.2017.00468/full)  
+ * Read the [introductory tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/01_getting_started/)
 
 ## Getting help
 

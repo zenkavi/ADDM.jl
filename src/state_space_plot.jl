@@ -13,6 +13,7 @@ recipetype(::Val{:state_space_plot}, args...) = State_Space_Plot(args)
   timeStep = ssp.args[4]
   stateStep = ssp.args[5]
   likelihoodLims = ssp.args[6]
+  prStateLims = ssp.args[7]
 
   # x = timeStep bins
   # y = stateStep bins
@@ -38,6 +39,7 @@ recipetype(::Val{:state_space_plot}, args...) = State_Space_Plot(args)
     subplot := 2
     yticks := -1:1:1
     xformatter --> (x -> "")
+    clims := prStateLims
     x, y, prStates
   end
 
@@ -59,7 +61,6 @@ recipetype(::Val{:state_space_plot}, args...) = State_Space_Plot(args)
     top_margin := -3.5mm
     xticks := :auto
     z = reshape(probDownCrossing, 1, length(probDownCrossing))
-    # xticks := minimum(x):100:maximum(x)
     yformatter --> (y -> "")
     x, [1], z
   end

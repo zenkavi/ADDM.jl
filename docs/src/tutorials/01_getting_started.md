@@ -154,11 +154,13 @@ mle = output[:mle];
 mle
 ```
 
-Success! Reducing the state step size was sufficient to recover the true parameter combination for the simulated dataset.
+Success! Reducing the state step size was sufficient to recover the true parameter combination for the simulated dataset. 
+
+Ok, but what happened there? That's what we detail in the [next tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/02_likelihood_computation/).
+
 
 ## Understanding step size effects
 
-Ok, but what happened there?
 
 We can look at a few things. 
 
@@ -170,7 +172,10 @@ param_grid = [(d = 0.007, sigma = 0.03, theta = 0.6), (d = 0.007, sigma = 0.05, 
 output_large = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args = (timeStep = 10.0, stateStep = 0.1), save_intermediate_likelihoods = true , intermediate_likelihood_path="./outputs/", intermediate_likelihood_fn="large_stateStep_likelihoods");
 
 output_small = ADDM.grid_search(SimData, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0), likelihood_args = (timeStep = 10.0, stateStep = 0.01), save_intermediate_likelihoods = true, intermediate_likelihood_path="./outputs/", intermediate_likelihood_fn="small_stateStep_likelihoods");
+```
 
+
+```@repl 1
 fns = ["large", "small"];
 
 trial_likelihoods_for_sigmas = DataFrame();
@@ -210,25 +215,48 @@ diff_trial_nums = [@orderby(trial_likelihoods_for_sigmas, -:diff_likelihood)[1,:
 
 # extract these from the data
 diff_trials = SimData[diff_trial_nums];
+```
 
-# Use aDDM_get_trial_likelihood with debug = true to get probStates and probUp and 
+Plot probStates for each trial with small vs large stateStep for correct and incorrect model
+
+```@repl 1
+# 2 x 2 plot
+# Rows are stepsize
+# Cols are models
+# Point is to show that likelihood value changes depending on stepsize
+# Colors must match across the four plots
+# Need a legend common to all
+# Why are the prStates plots with small stepsize so dark?
+# Because the values in each bin are very small. 
+# They values in each bin are small because they are spread over 10 times as many bins.
+
 correct_model = MyModel
 incorrect_model = ADDM.define_model(d = 0.007, σ = 0.05, θ = .6, barrier = 1, 
                 decay = 0, nonDecisionTime = 100, bias = 0.0)
 
 
+# Use aDDM_get_trial_likelihood with debug = true to get probStates and probUp and 
+_, prStates_cm_ls, probUpCrossing_cm_ls, probDownCrossing_cm_ls = ADDM.aDDM_get_trial_likelihood(;model = correct_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.1, debug = true)
 
-likelihood, prStates, probUpCrossing, probDownCrossing = ADDM.aDDM_get_trial_likelihood(;model = correct_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.1, debug = true)
+_, prStates_cm_ss, probUpCrossing_cm_ss, probDownCrossing_cm_ss = ADDM.aDDM_get_trial_likelihood(;model = correct_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.01, debug = true)
 
-curMax = maximum(vcat(probUpCrossing, probDownCrossing))
-likelihoodLims = (0, curMax)
+_, prStates_im_ls, probUpCrossing_im_ls, probDownCrossing_im_ls = ADDM.aDDM_get_trial_likelihood(;model = incorrect_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.1, debug = true)
 
-p = state_space_plot(prStates, probUpCrossing, probDownCrossing, 10, 0.1, likelihoodLims)
+_, prStates_im_ss, probUpCrossing_im_ss, probDownCrossing_im_ss = ADDM.aDDM_get_trial_likelihood(;model = incorrect_model, trial = diff_trials[1], timeStep = 10.0, stateStep = 0.01, debug = true)
 
-# Make these into one function
-hline!(p[2], [1], color=:red, lw=10)
-hline!(p[2], [-1], color=:red, lw = 10)
+likMax = maximum(vcat(probUpCrossing_cm_ls, probDownCrossing_cm_ls, probUpCrossing_cm_ss, probDownCrossing_cm_ss, probUpCrossing_im_ls, probDownCrossing_im_ls, probUpCrossing_im_ss, probDownCrossing_im_ss))
+likelihoodLims = (0, likMax);
+prStateLims = (0, 0.05);
 
+p1 = state_space_plot(prStates_cm_ls, probUpCrossing_cm_ls, probDownCrossing_cm_ls, 10, 0.1, likelihoodLims, prStateLims);
+p2 = state_space_plot(prStates_cm_ss, probUpCrossing_cm_ss, probDownCrossing_cm_ss, 10, 0.01, likelihoodLims, prStateLims);
+p3 = state_space_plot(prStates_im_ls, probUpCrossing_im_ls, probDownCrossing_im_ls, 10, 0.1, likelihoodLims, prStateLims);
+p4 = state_space_plot(prStates_im_ss, probUpCrossing_im_ss, probDownCrossing_im_ss, 10, 0.01, likelihoodLims, prStateLims);
 
-# Plot probStates for each trial with small vs large stateStep for correct and incorrect sigma 
+plot_array = Any[];
+push!(plot_array, p1);
+push!(plot_array, p2);
+push!(plot_array, p3);
+push!(plot_array, p4);
+plot(plot_array...)
 ```

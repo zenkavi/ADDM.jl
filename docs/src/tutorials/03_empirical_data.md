@@ -24,53 +24,56 @@ where the first element is choice (-1 for left, +1 for right), second element is
 
 
 ```@repl 3
-krajbich_data = ADDM.load_data_from_csv("../../../data/Krajbich2010_behavior.csv", "../../../data/Krajbich2010_fixations.csv")
+data_path = "../../../data/" # hide
+krajbich_data = ADDM.load_data_from_csv(data_path * "Krajbich2010_behavior.csv", data_path * "Krajbich2010_fixations.csv")
 ```
+!!! note
 
-Note the organization of data. It is a dictionary where the keys are subject identifiers and values are arrays of `ADDM.Trial` objects.
+    Note the organization of data. It is a dictionary where the keys are subject identifiers and values are arrays of `ADDM.Trial` objects.
+
+    
 
 ## Grid search
 
 Now that we have loaded our data, we define the parameter space over which we'll search to determine the best combination for each subject. We'll use a grid of 64 parameter combinations with `d` in {0.0001, 0.00015, 0.0002, 0.00025}, `μ` in {80, 100, 120, 140}, `θ` in {0.3, 0.5, 0.7, 0.9}  and `σ = d*μ`   
 
 ```@repl 3
-fn = "../../../data/Krajbich_grid.csv";
+fn = data_path * "Krajbich_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp))
 ```
 
-Since the dataset contains multiple subjects and we want to compute the best parameters for each subject, we loop through each subject's dataset and collect the estimated parameters in a single data frame for each subject.
+Since the dataset contains multiple subjects and we want to compute the best parameters for each subject, we loop through each subject's dataset and collect the estimated parameters in a single data frame for each subject. This is sufficiently fast for this small example but see the parallelization [tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/06_parallelization.md/) on how to do this with larger datasets and parameter spaces.
 
 ```@repl 3
-all_nll_df = DataFrame();
-best_pars = Dict();
+all_nlls = DataFrame();
+subj_mles = Dict();
 
 for k in keys(krajbich_data)
   cur_subj_data = krajbich_data[k]
   
   output = ADDM.grid_search(cur_subj_data, param_grid, ADDM.aDDM_get_trial_likelihood, Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), return_grid_nlls = true)
 
-  subj_best_pars = output[:best_pars]
-  subj_nll_df = output[:grid_nlls]
+  subj_mles[k] = output[:mle]
+  
+  # Add subject id
+  output[:grid_nlls][!, "parcode"] .= k
 
-  best_pars[k] = subj_best_pars
-
-  subj_nll_df[!, "parcode"] .= k
-  append!(all_nll_df, subj_nll_df)
+  append!(all_nlls, output[:grid_nlls])
   
 end;
 ```
 
-To view best parameter estimates for each subject we can look at the `best_pars` data frame, to which the output of `ADDM.grid_search` was pushed for each subject.
+To view best parameter estimates for each subject we can look at the `subj_mles` data frame, to which the output of `ADDM.grid_search` was pushed for each subject.
 
 ```@repl 3
-best_pars
+subj_mles
 ```
 
 As an example visualization below we plot variability in the negative log likelihoods for each parameter combination for each subject. This is not a plot that is typically used for any model diagnostics. The intention is only to show that the likelihood function did indeed compute different values for different parameter combinations.
 
 ```@repl 3
-wide_nll_df = unstack(all_nll_df, :parcode, :nll);
+wide_nll_df = unstack(all_nlls, :parcode, :nll);
 select!(wide_nll_df, Not([:d, :sigma, :theta]));
 colnames = names(wide_nll_df);
 colnames = string.("subj-", colnames);

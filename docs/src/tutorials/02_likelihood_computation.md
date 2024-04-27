@@ -1,7 +1,28 @@
 # Likelihood computation in ADDM.jl
 
+How do we estimate parameters? We choose a measure to quantify the difference between observed/empirical data and data that would be generated
 
+For sequential sampling models these can be ...
 
+A very common metric in all kinds of applications is likelihood
+
+What is the likelihood in the context of sequential sampling models? It is the probability of observing the endorsed choice *at the observed response time*. This second part is what makes these models powerful. This is what we mean by the "joint" modeling of choice and response times.
+
+So how do we calculate the likelihood for sequential sampling models? There are a few ways
+- The analytical solution of the Wiener First Passage Time distribution
+- Trialwise simulations
+- Approximate Bayesian Computation
+- Solving the Fokker Planck Equation
+
+The likelihood functions in `ADDM.jl` use the last method.
+
+Briefly, the FPE describes how a probability distribution changes over time. Since it is an expression of change, formally it is written as a partial differential equation. We'll skip the details of the math here but for an in depth dive, please see Shinn et al.
+
+Here, we'll try to keep things intuitive. 
+
+[ADD Gabi's supplementary figure here]
+
+Ok so what is the effect of the discretization step sizes (in both time and space)
 
 ```@repl 2
 using ADDM, CSV, DataFrames, DataFramesMeta

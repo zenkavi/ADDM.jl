@@ -16,7 +16,7 @@ Return parameter container and likelihood function for given parameter combinati
 
 """
 
-function setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module=Main)
+function setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module = Main)
   
   model = ADDM.aDDM()
   for (k,v) in fixed_params setproperty!(model, k, v) end

@@ -9,6 +9,7 @@ using Combinatorics
 using CSV
 using DataFrames
 using DataFramesMeta
+using Distributed
 using Distributions
 using FLoops
 using LinearAlgebra

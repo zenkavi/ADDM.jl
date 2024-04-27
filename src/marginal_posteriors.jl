@@ -1,5 +1,5 @@
 """
-    marginal_posteriors(param_grid, posteriors_dict, two_d_marginals)
+    marginal_posteriors(posteriors_dict, two_d_marginals)
 
 Compute the marginal posterior distributions for the fitted parameters specified in `param_grid`.
 
@@ -7,11 +7,11 @@ Compute the marginal posterior distributions for the fitted parameters specified
 
 ## Required 
 
-- `param_grid`: Grid of parameter combinations for which the sum of nll's for the `data` is 
-  computed.
-- `posteriors_dict`: Dictionary of posterior model probabilities. Keys of this dictionary should match
-  the keys of the `param_grid` for the models the probabilities refer to.
+- `posteriors_dict`: Dictionary of posterior model probabilities. Keys of this dictionary are 
+  the parameter combinations specified in `param_grid`. Values are the posterior probabilties 
+  after accounting for each observation.
 - `two_d_marginals`: Boolean. Whether to compute posteriors to plot heatmaps of posteriors.
+  Default is false.
 
 # Returns
 - Vector of `DataFrame`s. If `two_d_marginals` is false, return only dataframes containing
@@ -19,15 +19,15 @@ Compute the marginal posterior distributions for the fitted parameters specified
   parameters as well.
 
 """
-function marginal_posteriors(param_grid, posteriors_dict, two_d_marginals = false)
+function marginal_posteriors(posteriors_dict; two_d_marginals = false)
 
   posteriors_df = DataFrame()
 
-  for (k, v) in param_grid
-    cur_row = DataFrame([v])
-    cur_row.posterior = [posteriors_dict[k]]
-    append!(posteriors_df, cur_row)
-  end
+  for (k, v) in posteriors_dict
+    cur_row = DataFrame([k])
+    cur_row.posterior = [v]
+    posteriors_df = vcat(posteriors_df, cur_row, cols=:union)
+  end;
 
   par_names = names(posteriors_df)[names(posteriors_df) .!= "posterior"]
   

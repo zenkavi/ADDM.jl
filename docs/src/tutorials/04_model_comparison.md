@@ -23,7 +23,7 @@ using ADDM, CSV, DataFrames, DataFramesMeta, Distributed, Distributions, LinearA
 The toolbox comes with a subset of the data from Krajbich et al. (2010). In this tutorials we will use data from a single subject from this dataset.
  
 ```@repl 4
-data_path = "../../../data/"; # hide
+@everywhere data_path = "../../../data/"; # hide
 krajbich_data = ADDM.load_data_from_csv(data_path * "Krajbich2010_behavior.csv", data_path * "Krajbich2010_fixations.csv");
 
 subj_data = krajbich_data["18"];

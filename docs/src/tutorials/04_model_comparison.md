@@ -262,7 +262,7 @@ Then we define the likelihood function for the second model. We do this by readi
   
 ```@repl 4
 @everywhere include("./my_likelihood_fn.jl");
-fn_module = [meth.module for meth in methods(my_likelihood_fn)][1];
+fn_module = [meth.module for meth in methods(my_likelihood_fn)][1]; # hide
 ```
 
 Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. 
@@ -287,7 +287,7 @@ my_likelihood_args = (timeStep = 10.0, stateStep = 0.01);
   
 output = ADDM.grid_search(subj_data, param_grid, nothing,
     Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
-    likelihood_args = my_likelihood_args, likelihood_fn_module = fn_module, 
+    likelihood_args = my_likelihood_args, 
     return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
 
 mle = output[:mle]

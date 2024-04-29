@@ -158,7 +158,7 @@ end
     match_param_grid_keys(param_grid)
 
 If param_grid contains models with different parameter names, ensure all entries in 
-  param_grid have the same names and assigns a `nothing` if that parameter names does not exist for
+  param_grid have the same names and assigns a "NA" if that parameter names does not exist for
   a given model.
 
 # Arguments
@@ -191,7 +191,7 @@ function match_param_grid_keys(param_grid)
         if j in keys(i)
           cur_param_values = vcat(cur_param_values, i[j])
         else
-          cur_param_values = vcat(cur_param_values, nothing)
+          cur_param_values = vcat(cur_param_values, "NA")
         end
       end
       cur_params = (;zip(param_keys, cur_param_values)...)
@@ -327,6 +327,9 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   intermediate_likelihood_fn= "trial_likelihoods_int_save",
   noise_param_name = "sigma")
 
+  # Make sure param_grid has all param names in all entries
+  param_grid = match_param_grid_keys(param_grid)
+
   # Indexed with model param information instead of param_grid rows using NamedTuple keys.
   # Defined with a specific length for performance.
   # Ref is an allocation for FLoops.jl
@@ -339,44 +342,59 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   n_trials = length(data)
   trial_likelihoods = Ref(Dict(k => Dict(zip(1:n_trials, zeros(n_trials))) for k in param_grid))
 
-  # Make sure param_grid has all param names in all entries
-  param_grid = match_param_grid_keys(param_grid)
+
+  ## Check if there are multiple likelihood_fn's
+  ## Split param_grid for each likelihood_fn if there are multiple
+  if :likelihood_fn in keys(param_grid[1])
+    lik_fns = unique([i.likelihood_fn for i in param_grid])
+    if length(lik_fns) > 1
+      all_param_grids = Vector{Any}(undef, length(lik_fns))
+      for (i, cur_lik_fn) in enumerate(lik_fns)
+        all_param_grids[i] = [p for p in param_grid if p.likelihood_fn == cur_lik_fn]
+      end
+    end
+  else
+    all_param_grids = [param_grid]
+  end
 
   #### START OF PARALLELIZABLE PROCESSES
 
-  @floop grid_search_exec for cur_grid_params in param_grid
+  for cur_param_grid in all_param_grids
 
-    ## Check stability criterion for the parameter combination
-    unstable = !(((likelihood_args.timeStep/1000)/(likelihood_args.stateStep^2)) < 1/(cur_grid_params[Symbol(noise_param_name)]^2))
-    if unstable
-      println("dt/(dx^2) < 1/(σ^2) not satisfied. Try reducing timestep.")
-      println("sigma = " * string(cur_grid_params[Symbol(noise_param_name)]))
-      println("timeStep (dt) = " * string((likelihood_args.timeStep/1000)) * " s")
-      println("stateStep (dx) = " * string(likelihood_args.stateStep))
-    end
+    @floop grid_search_exec for cur_grid_params in cur_param_grid
 
-    # Give an update on where things run if running a big grid remotely
-    if save_intermediate_likelihoods
-      println(cur_grid_params)
-      flush(stdout)
-    end
-
-    # Setup the parameter container and the likelihood function
-    cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
-
-    if (return_model_posteriors || save_intermediate_likelihoods)
-    # Trial likelihoods will be a dict indexed by trial numbers
-      all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args; 
-                  return_trial_likelihoods = true,  sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
-
-      if save_intermediate_likelihoods
-        save_intermediate_likelihoods_fn(trial_likelihoods[][cur_grid_params], cur_grid_params, intermediate_likelihood_path, intermediate_likelihood_fn)
+      ## Check stability criterion for the parameter combination
+      unstable = !(((likelihood_args.timeStep/1000)/(likelihood_args.stateStep^2)) < 1/(cur_grid_params[Symbol(noise_param_name)]^2))
+      if unstable
+        println("dt/(dx^2) < 1/(σ^2) not satisfied. Try reducing timestep.")
+        println("sigma = " * string(cur_grid_params[Symbol(noise_param_name)]))
+        println("timeStep (dt) = " * string((likelihood_args.timeStep/1000)) * " s")
+        println("stateStep (dx) = " * string(likelihood_args.stateStep))
       end
-      
-    else
-      all_nll[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args, sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
-    end
 
+      # Give an update on where things run if running a big grid remotely
+      if save_intermediate_likelihoods
+        println(cur_grid_params)
+        flush(stdout)
+      end
+
+      # Setup the parameter container and the likelihood function
+      cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
+
+      if (return_model_posteriors || save_intermediate_likelihoods)
+      # Trial likelihoods will be a dict indexed by trial numbers
+        all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args; 
+                    return_trial_likelihoods = true,  sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
+
+        if save_intermediate_likelihoods
+          save_intermediate_likelihoods_fn(trial_likelihoods[][cur_grid_params], cur_grid_params, intermediate_likelihood_path, intermediate_likelihood_fn)
+        end
+        
+      else
+        all_nll[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args, sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
+      end
+
+    end
   end
 
   #### END OF PARALLELIZABLE PROCESSES

@@ -266,7 +266,7 @@ Then we define the likelihood function for the second model. We do this by readi
 
   
 ```@repl 4
-@everywhere include("./my_likelihood_fn.jl");
+@everywhere include(data_path * "my_likelihood_fn.jl");
 fn_module = [meth.module for meth in methods(my_likelihood_fn)][1]; # hide
 ```
 

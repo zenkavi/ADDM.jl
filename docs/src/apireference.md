@@ -35,12 +35,24 @@ ADDM.compute_trials_nll
 ## Grid search
 
 ```@docs
+ADDM.setup_fit_for_params
+ADDM.get_trial_posteriors
+ADDM.save_intermediate_likelihoods_fn
+ADDM.match_param_grid_keys
+ADDM.get_mle
 ADDM.grid_search
+```
+
+## Marginal posteriors
+
+```@docs
+ADDM.marginal_posteriors
+ADDM.marginal_posterior_plot
 ```
 
 ## Helpers
 
 ```@docs
 ADDM.load_data_from_csv
-ADDM.convert_param_symbols
+ADDM.convert_param_text_to_symbol
 ```

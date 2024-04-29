@@ -259,6 +259,11 @@ param_grid1 = NamedTuple.(eachrow(tmp));
 ```
 
 Then we define the likelihood function for the second model. We do this by reading in a custom function we have defined in a separate script. This script includes a function called `my_likelihood_fn`. We will use this function name string when defining the parameter space.
+
+!!! note
+
+    `@everywhere` is a macro defined by `Distributed.jl`. It ensures that the likelihood function is available to all processes when parallelizing computations.
+
   
 ```@repl 4
 @everywhere include("./my_likelihood_fn.jl");
@@ -292,11 +297,11 @@ output = ADDM.grid_search(subj_data, param_grid, nothing,
 
 mle = output[:mle]
 nll_df = output[:grid_nlls]
-trial_posteriors = output[:trial_posteriors]
+trial_posteriors = output[:trial_posteriors];
 model_posteriors = output[:model_posteriors];
 ```
 
-Just as before, the `model_posteriors` dictionary does not contain information on the parameters, so we combine it with the `param_grid` in a `DataFrame` for visualization purposes.
+As before, we create a dataframe containing the `model_posteriors` for visualization purposes.
 
 ```@repl 4
 posteriors_df2 = DataFrame();
@@ -311,7 +316,7 @@ end;
 We can take a look at the most likely parameter combinations across the generative processes.
 
 ```@repl 4
-# sort(posteriors_df2, :posterior, rev=true)
+sort(posteriors_df2, :posterior, rev=true)
 ```
 !!! note
 
@@ -325,7 +330,7 @@ We can also collapse the posterior distribution across the generative processes 
 
 ```@repl 4
 gdf = groupby(posteriors_df2, :likelihood_fn);
-combdf = combine(gdf, :posterior => sum)
+combdf = combine(gdf, :posterior => sum);
 
 @df combdf bar(:likelihood_fn, :posterior_sum, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
@@ -333,12 +338,11 @@ savefig("plot_3_6.png"); nothing # hide
 ```
 ![plot](plot_3_6.png)
 
-We can check whether this conclusion changed with more trials
+We can check how this conclusion evolved with the addition of each trial.
 
 ```@repl 4
 # Initialize empty df
 trial_model_posteriors = DataFrame();
-model_info = DataFrame(model_num = [x for x in keys(param_grid)], likelihood_fn = [x.likelihood_fn for x in values(param_grid)]);
 
 for i in 1:nTrials
 
@@ -347,7 +351,7 @@ for i in 1:nTrials
 
   cur_trial_posteriors = DataFrame(model_num = collect(keys(cur_trial_posteriors)), posterior = collect(values(cur_trial_posteriors)))
 
-  cur_trial_posteriors = leftjoin(cur_trial_posteriors, model_info, on = :model_num)
+  @transform!(cur_trial_posteriors, @byrow :likelihood_fn = :model_num.likelihood_fn)
 
   gdf = groupby(cur_trial_posteriors, :likelihood_fn)
   cur_trial_posteriors = combine(gdf, :posterior => sum)
@@ -371,6 +375,37 @@ end;
 savefig("plot_3_7.png"); nothing # hide
 ```
 ![plot](plot_3_7.png)
+
+### Priors about models
+
+Suppose we had very strong prior beliefs about two of the models in our parameter space. We specify this belief as a probability of `.495` for two models and assign the remaining probability mass to all other models.
+
+Important: 
+1. Make sure the keys of the model priors dictionary has the same keys for all models (`ADDM.match_param_grid_keys`).
+2. Make sure there is some probability mass for all models (i.e. all values in model priors dictionary should be larger than 0.).
+3. Make sure that the values of model priors sum up to 1 (i.e. so it a proper probability distribution).
+
+This is not a good example to demonstrate the effect of priors because the evidence against the custom model is too strong immediately after the first trial.
+
+```@repl 4
+param_grid = ADDM.match_param_grid_keys(param_grid)
+n_models = length(param_grid)
+
+my_priors = Dict(zip(param_grid, repeat([(1-(.495*2))/(n_models)], outer = n_models)))
+my_priors[(d = 0.014, sigma = 0.07, theta = 0.9, lambda = 0.01, likelihood_fn = "my_likelihood_fn")] = .495
+my_priors[(d = 0.014, sigma = 0.07, theta = 0.6, lambda = 0.01, likelihood_fn = "my_likelihood_fn")] = .495
+
+output = ADDM.grid_search(subj_data, param_grid, nothing,
+    Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>0, :bias=>0.0), 
+    likelihood_args = my_likelihood_args, 
+    model_priors = my_priors,
+    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
+
+mle = output[:mle]
+nll_df = output[:grid_nlls]
+trial_posteriors = output[:trial_posteriors];
+model_posteriors = output[:model_posteriors];
+```
 
 ## Comparing true data with simulated data
 
@@ -421,7 +456,7 @@ simStand = ADDM.simulate_data(standModel, MyStims, ADDM.aDDM_simulate_trial, MyA
 We repeat these steps for the alternative model. The simulator function for this model is defined in `my_trial_simulator.jl` so we need to source that into our session before we can call the function.
 
 ```@repl 4
-include("./my_trial_simulator.jl")
+@everywhere include("./my_trial_simulator.jl")
 ```
 
 Now we can define the alternative model with the best fitting parameters for that model and simulate data.

@@ -15,7 +15,6 @@ Return parameter container and likelihood function for given parameter combinati
   combination.
 
 """
-
 function setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module = Main)
   
   model = ADDM.aDDM()
@@ -322,6 +321,7 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   return_grid_nlls = false,
   return_model_posteriors = false,
   return_trial_posteriors = false,
+  return_trial_likelihoods = false,
   save_intermediate_likelihoods = false,
   intermediate_likelihood_path= "./outputs/",
   intermediate_likelihood_fn= "trial_likelihoods_int_save",
@@ -347,13 +347,14 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
   ## Split param_grid for each likelihood_fn if there are multiple
   if :likelihood_fn in keys(param_grid[1])
     lik_fns = unique([i.likelihood_fn for i in param_grid])
+    all_param_grids = [param_grid] # likelihood_fn defined in param_grid but there's only one
     if length(lik_fns) > 1
       all_param_grids = Vector{Any}(undef, length(lik_fns))
       for (i, cur_lik_fn) in enumerate(lik_fns)
         all_param_grids[i] = [p for p in param_grid if p.likelihood_fn == cur_lik_fn]
       end
     end
-  else
+  else #if likelihood_fn not defined in param_grid
     all_param_grids = [param_grid]
   end
 
@@ -379,11 +380,11 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
       end
 
       # Setup the parameter container and the likelihood function
-      cur_model, cur_likelihood_fn = setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
+      cur_model, cur_likelihood_fn = ADDM.setup_fit_for_params(fixed_params, likelihood_fn, cur_grid_params, likelihood_fn_module)
 
       if (return_model_posteriors || save_intermediate_likelihoods)
       # Trial likelihoods will be a dict indexed by trial numbers
-        all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args; 
+        all_nll[][cur_grid_params], trial_likelihoods[][cur_grid_params] = ADDM.compute_trials_nll(cur_model, data, cur_likelihood_fn, likelihood_args; 
                     return_trial_likelihoods = true,  sequential_model = sequential_model, compute_trials_exec = compute_trials_exec)
 
         if save_intermediate_likelihoods
@@ -427,7 +428,11 @@ function grid_search(data, param_grid, likelihood_fn = nothing,
     model_posteriors = Dict(k => trial_posteriors[k][n_trials] for k in keys(trial_posteriors))
     output[:model_posteriors] = model_posteriors
 
-    end
+  end
+
+  if return_trial_likelihoods
+    output[:trial_likelihoods] = trial_likelihoods[]
+  end
 
   return output
 

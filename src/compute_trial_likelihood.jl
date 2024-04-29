@@ -1,6 +1,6 @@
 """
     aDDM_get_trial_likelihood(;addm::aDDM, trial::Trial, timeStep::Number = 10.0, 
-                              approxStateStep::Number = 0.1)
+                              stateStep::Number = 0.01)
 
 Compute the likelihood of the data from a single aDDM trial for these particular aDDM 
   parameters.
@@ -12,12 +12,12 @@ Compute the likelihood of the data from a single aDDM trial for these particular
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
-- `approxStateStep`: Number, to be used for binning the RDV axis.
+- `stateStep`: Number, to be used for binning the RDV axis.
 Returns:
 - The likelihood obtained for the given trial and model.
 """
 function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10.0, 
-                                   approxStateStep::Number = 0.1)
+                                   stateStep::Number = 0.01, debug = false)
     
     # Iterate over the fixations and discount the non-decision time.
     if model.nonDecisionTime > 0
@@ -58,7 +58,7 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
     barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
     
     # Obtain correct state step.
-    halfNumStateBins = ceil(model.barrier / approxStateStep)
+    halfNumStateBins = ceil(model.barrier / stateStep)
     stateStep = model.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
@@ -174,12 +174,16 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
         end
     end
     
-    return likelihood
+    if debug
+      return (likelihood, prStates, probUpCrossing, probDownCrossing)
+    else
+      return likelihood
+    end
 end
 
 """
     DDM_get_trial_likelihood(;ddm::aDDM, trial::Trial, timeStep::Number = 10, 
-                             approxStateStep::Number = 0.1)
+                             stateStep::Number = 0.01)
 
 Compute the likelihood of the data from a single DDM trial for these
 particular DDM parameters.
@@ -191,12 +195,12 @@ particular DDM parameters.
 - `trial`: Trial object.
 - `timeStep`: Number, value in milliseconds to be used for binning the
     time axis.
-- `approxStateStep`: Number, to be used for binning the RDV axis.
+- `stateStep`: Number, to be used for binning the RDV axis.
 # Returns
 - The likelihood obtained for the given trial and model.
 """
 function DDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10, 
-                                  approxStateStep::Number = 0.1)
+                                  stateStep::Number = 0.01)
     
     # Get the number of time steps for this trial.
     numTimeSteps = Int64(trial.RT ÷ timeStep)
@@ -209,7 +213,7 @@ function DDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number =
     barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:numTimeSteps-1))
 
     # Obtain correct state step.
-    halfNumStateBins = ceil(model.barrier / approxStateStep)
+    halfNumStateBins = ceil(model.barrier / stateStep)
     stateStep = model.barrier / (halfNumStateBins + 0.5)
     
     # The vertical axis is divided into states.
@@ -314,26 +318,39 @@ Compute likelihood of a dataset for a given model.
 - `likelihood_fn`: Name of the function that computes the likelhoods of a trial for the given model.
 - `likelihood_args`: Named tuple containing kwargs that should be fed to `likelihood_fn`
 - `return_trial_likelihoods`: Boolean to specify whether to return the likelihoods for each trial
+- `sequential_model`: Boolean to specify if the model requires all data concurrently (e.g. RL-DDM). If `true` model cannot be multithreaded
 
 # Returns
 - Negative log likelihood of data
+- (Optional) Dictionary of trial likelihoods keyed by the trial number
 """
-function compute_trials_nll(model::aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, approxStateStep = 0.1); 
-                            return_trial_likelihoods = false)
-  
-  # Todo: Add parallelization here?
-  likelihoods = [likelihood_fn(;model = model, trial = OneTrial, likelihood_args...) for OneTrial in data]
+function compute_trials_nll(model::ADDM.aDDM, data, likelihood_fn, likelihood_args = (timeStep = 10.0, stateStep = 0.1); 
+  return_trial_likelihoods = false, sequential_model = false, compute_trials_exec = ThreadedEx())
+
+  n_trials = length(data)
+  data_dict = Dict(zip(1:length(data), data))
+  likelihoods = Ref{Dict{Int64, Float64}}(Dict(zip(1:n_trials, zeros(n_trials))))
+
+  # Redundant but maybe more foolproof in case there is confusion about the executor
+  if sequential_model
+   cur_exe = SequentialEx()
+  else
+   cur_exe = compute_trials_exec
+  end
+
+  @floop cur_exe for trial_number in collect(eachindex(data_dict))
+    likelihoods[][trial_number] = likelihood_fn(;model = model, trial = data_dict[trial_number], likelihood_args...)
+  end
 
   # If likelihood is 0, set it to 1e-64 to avoid taking the log of a 0.
-  likelihoods = max.(likelihoods, 1e-64)
+  likelihoods[] = Dict(k => max(v, 1e-64) for (k,v) in likelihoods[])
 
   # Sum over all of the negative log likelihoods.
-  negative_log_likelihood = -sum(log.(likelihoods))
+  negative_log_likelihood = -sum(log.(values(likelihoods[])))
 
   if return_trial_likelihoods
-    return negative_log_likelihood, likelihoods
+    return negative_log_likelihood, likelihoods[]
   else
     return negative_log_likelihood
   end
-
 end

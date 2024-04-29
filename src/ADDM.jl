@@ -5,13 +5,13 @@ module ADDM
 # e.g. ADDM.define_model(...) or ADDM.grid_search(...)
 # export define_model, simulate_data, grid_search
 
-using Base.Threads
-using BenchmarkTools
 using Combinatorics
 using CSV
 using DataFrames
 using DataFramesMeta
+using Distributed
 using Distributions
+using FLoops
 using LinearAlgebra
 using Plots
 import Plots: _cycle
@@ -28,10 +28,9 @@ using StatsPlots
 include("define_model.jl")
 include("fixation_data.jl")
 include("simulate_data.jl")
-include("compute_likelihood.jl")
+include("compute_trial_likelihood.jl")
 include("util.jl")
 include("grid_search.jl")
 include("marginal_posteriors.jl")
-include("margpostplot.jl")
 
 end

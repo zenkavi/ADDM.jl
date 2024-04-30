@@ -23,7 +23,7 @@ using ADDM, CSV, DataFrames, DataFramesMeta, Distributed, Distributions, LinearA
 The toolbox comes with a subset of the data from Krajbich et al. (2010). In this tutorials we will use data from a single subject from this dataset.
  
 ```@repl 4
-data_path = "./data/"; # hide
+data_path = joinpath(dirname(dirname(pathof(ADDM))), "data/"); # hide
 krajbich_data = ADDM.load_data_from_csv(data_path * "Krajbich2010_behavior.csv", data_path * "Krajbich2010_fixations.csv");
 
 subj_data = krajbich_data["18"];
@@ -450,7 +450,7 @@ simStand = ADDM.simulate_data(standModel, MyStims, ADDM.aDDM_simulate_trial, MyA
 We repeat these steps for the alternative model. The simulator function for this model is defined in `my_trial_simulator.jl` so we need to source that into our session before we can call the function.
 
 ```@repl 4
-include("./my_trial_simulator.jl")
+include(data_path * "my_trial_simulator.jl")
 ```
 
 Now we can define the alternative model with the best fitting parameters for that model and simulate data.

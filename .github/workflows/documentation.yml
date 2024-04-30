@@ -29,4 +29,4 @@ jobs:
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
           # GKSwstype: "nul" # https://github.com/JuliaPlots/PlotDocs.jl/blob/master/docs/ci_build.sh
           GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
-        run: julia --project=docs/ docs/make.jl
+        run: julia --project=docs/ --threads 4 docs/make.jl

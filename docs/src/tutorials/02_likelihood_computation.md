@@ -1,14 +1,20 @@
 # Likelihood computation in ADDM.jl
 
+In the [previous tutorial](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/01_getting_started/) we were not able to recover the true parameters used for the simulated data when using `stateStep = 0.1`. Reducing this to `stateStep = 0.01` corrected the recovery. In this tutorial we will walk through how parameter estimation in ADDM.jl works to explain the effect of this change.
+
+## Brief overview of parameter estimation methods for sequential sampling models
+
 How do we estimate parameters? We choose a measure to quantify the difference between observed/empirical data and data that would be generated
 
-For sequential sampling models these can be ...
+
+
+For sequential sampling models these can be ...[^1]
 
 A very common metric in all kinds of applications is likelihood
 
 What is the likelihood in the context of sequential sampling models? It is the probability of observing the endorsed choice *at the observed response time*. This second part is what makes these models powerful. This is what we mean by the "joint" modeling of choice and response times.
 
-So how do we calculate the likelihood for sequential sampling models? There are a few ways
+ There are a few ways of calculating this value for sequential sampling models:
 - The analytical solution of the Wiener First Passage Time distribution
 - Trialwise simulations
 - Approximate Bayesian Computation
@@ -144,3 +150,5 @@ push!(plot_array, p3);
 push!(plot_array, p4);
 plot(plot_array...)
 ```
+
+[^1]: For a more detailed overview see *Shinn, M., Lam, N. H., & Murray, J. D. (2020). A flexible framework for simulating and fitting generalized drift-diffusion models. ELife, 9, e56938.*

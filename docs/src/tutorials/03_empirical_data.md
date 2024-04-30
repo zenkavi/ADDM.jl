@@ -24,7 +24,7 @@ where the first element is choice (-1 for left, +1 for right), second element is
 
 
 ```@repl 3
-data_path = "../../../data/" # hide
+data_path = joinpath(dirname(dirname(pathof(ADDM))), "data/") # hide
 krajbich_data = ADDM.load_data_from_csv(data_path * "Krajbich2010_behavior.csv", data_path * "Krajbich2010_fixations.csv")
 ```
 !!! note

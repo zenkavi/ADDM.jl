@@ -41,7 +41,7 @@ The toolbox comes with [some datasets](https://github.com/aDDM-Toolbox/ADDM.jl/t
 Here, we are reading in empirical data that comes with the package but we will not be making use of the observed choices and response times. This is specified with the `stimsOnly` argument. The empirical data is only used to extract value difference information to index the fixation data correctly. The choices and response times will be simulated below based on the parameters we specified above.
 
 ```@repl 1
-data_path = "./data/"
+data_path = joinpath(dirname(dirname(pathof(ADDM))), "data/"); # hide
 data = ADDM.load_data_from_csv(data_path * "stimdata.csv", data_path * "fixations.csv"; stimsOnly = true);
 ```
 

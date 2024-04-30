@@ -32,7 +32,7 @@ Random.seed!(38435)
 MyModel = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, 
                        decay = 0, nonDecisionTime = 100, bias = 0.0)
 
-data_path = "../../../data/" 
+data_path = "./data/" 
 data = ADDM.load_data_from_csv(data_path * "stimdata.csv", data_path * "fixations.csv"; stimsOnly = true);
 
 nTrials = 1400;

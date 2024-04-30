@@ -12,7 +12,7 @@ using ADDM, CSV, DataFrames, StatsPlots
 
 ## Read in data
 
-Data in this tutorial are from 10 subjects in Kraijbich et al (2010). We will use the built-in data loading function `ADDM.load_data_from_csv` that expects a behavioral file with columns `parcode, trial, rt, choice, item_left, item_right` and fixations file with columns `parcode, trial, fix_item, fix_time`.
+Data in this tutorial are from 10 subjects in [Kraijbich et al (2010)](https://www.nature.com/articles/nn.2635). We will use the built-in data loading function `ADDM.load_data_from_csv` that expects a behavioral file with columns `parcode, trial, rt, choice, item_left, item_right` and fixations file with columns `parcode, trial, fix_item, fix_time`.
 
 If your data is not organized in this way you could either preprocess it so it does or you can read in the data however you want and reshape it with Julia to ensure it is organized as a dictionary of `Trial` objects *indexed by subject/parcode*. A `Trial` looks like
 

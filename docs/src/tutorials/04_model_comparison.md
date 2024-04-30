@@ -23,7 +23,7 @@ using ADDM, CSV, DataFrames, DataFramesMeta, Distributed, Distributions, LinearA
 The toolbox comes with a subset of the data from Krajbich et al. (2010). In this tutorials we will use data from a single subject from this dataset.
  
 ```@repl 4
-@everywhere data_path = "../../../data/"; # hide
+data_path = "./data/"; # hide
 krajbich_data = ADDM.load_data_from_csv(data_path * "Krajbich2010_behavior.csv", data_path * "Krajbich2010_fixations.csv");
 
 subj_data = krajbich_data["18"];
@@ -259,15 +259,9 @@ param_grid1 = NamedTuple.(eachrow(tmp));
 ```
 
 Then we define the likelihood function for the second model. We do this by reading in a custom function we have defined in a separate script. This script includes a function called `my_likelihood_fn`. We will use this function name string when defining the parameter space.
-
-!!! note
-
-    `@everywhere` is a macro defined by `Distributed.jl`. It ensures that the likelihood function is available to all processes when parallelizing computations.
-
   
 ```@repl 4
-@everywhere include(data_path * "my_likelihood_fn.jl");
-fn_module = [meth.module for meth in methods(my_likelihood_fn)][1]; # hide
+include(data_path * "my_likelihood_fn.jl");
 ```
 
 Now we define the parameter space we will examine for the second model. In addition to the parameter values we also include `my_likelihood_fn` as a string in `param_grid` so `ADDM.grid_search` knows which generative process to use when computing the trial likelihoods for the parameter combinations of the second model. 
@@ -456,7 +450,7 @@ simStand = ADDM.simulate_data(standModel, MyStims, ADDM.aDDM_simulate_trial, MyA
 We repeat these steps for the alternative model. The simulator function for this model is defined in `my_trial_simulator.jl` so we need to source that into our session before we can call the function.
 
 ```@repl 4
-@everywhere include("./my_trial_simulator.jl")
+include("./my_trial_simulator.jl")
 ```
 
 Now we can define the alternative model with the best fitting parameters for that model and simulate data.

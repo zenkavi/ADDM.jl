@@ -2,9 +2,9 @@ using Distributions
 using LinearAlgebra
 
 function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number = 10.0, 
-                                   stateStep::Number = 0.1)
+                                   stateStep::Number = 0.01)
     
-    # Iterate over the fixations and discount the non-decision time.
+# Iterate over the fixations, subtract the non-decision time fixationTimes and replace fixation locations with 0 for that duration.
     if model.nonDecisionTime > 0
         correctedFixItem = Number[]
         correctedFixTime = Number[]
@@ -90,6 +90,11 @@ function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number
         cdfUp = similar(changeUp[:, time])
         cdfDown = similar(changeDown[:, time])
         
+        # We use a normal distribution to model changes in RDV
+        # stochastically. The mean of the distribution (the change most
+        # likely to occur) is calculated from the model parameters and from
+        # the item values.
+        
         @. normpdf = pdf(Normal(μDict[fItem], model.σ), changeMatrix)
         @. cdfUp = cdf(Normal(μDict[fItem], model.σ), changeUp[:, time])
         @. cdfDown = cdf(Normal(μDict[fItem], model.σ), changeDown[:, time])
@@ -100,11 +105,8 @@ function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number
     
     # Iterate over all fixations in this trial.
     for (fItem, fTime) in zip(correctedFixItem, correctedFixTime)
-        # We use a normal distribution to model changes in RDV
-        # stochastically. The mean of the distribution (the change most
-        # likely to occur) is calculated from the model parameters and from
-        # the item values.
-        μ = μDict[fItem]
+        
+       # Select the correct change matrices for this fixation
         normpdf = pdfDict[fItem]
         cdfUp = cdfUpDict[fItem]
         cdfDown = cdfDownDict[fItem]

@@ -16,11 +16,11 @@ function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData,
     tRDV = Number[RDV]
     RT = 0
     uninterruptedLastFixTime = 0
-    ndtTimeSteps = Int64(model.nonDecisionTime ÷ timeStep)
 
     # The values of the barriers can change over time.
     # In this case we include an exponential decay
     # Due to the shape of the exponential decay function the starting point for the decay is exp(0) = 1
+    # Note that though we define barrierDown, it's not used later because boundaries are symmetric
     barrierUp = exp.(-model.λ .* (0:cutOff-1))
     barrierDown = -exp.(-model.λ .* (0:cutOff-1))
     
@@ -77,7 +77,8 @@ function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData,
                 currFixLocation = abs(3 - prevFixItem)
             end
             prevFixItem = currFixLocation
-
+            
+            # This simulator works only for FixationData organized in "fixation" scheme
             # Sample the duration of this item fixation.
             valueDiff = fixUnfixValueDiffs[currFixLocation]
             #[1] is here to make sure it's not sampling from 1-element Vector but from the array inside it
@@ -91,7 +92,7 @@ function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData,
         else
             # This is a transition.
              currFixLocation = 0
-            # Sample the duration of this transition. The fixation data used below does not have transition information so ignoring this.
+            # Sample the duration of this transition. The fixation data for this simulator_args does not have transition information so ignoring this.
             # currFixTime = rand(fixationData.transitions)
             currFixTime = 0
         end
@@ -156,6 +157,7 @@ function my_trial_simulator(;model::ADDM.aDDM, fixationData::ADDM.FixationData,
 
             # If the RDV hit one of the barriers, the trial is over.
             # Decision related accummulation here so barrier might have decayed
+            # Note that this assumes symmetric boundaries
             if abs(RDV) >= barrierUp[cumTimeStep]
                 choice = RDV >= 0 ? -1 : 1
                 push!(fixRDV, RDV)

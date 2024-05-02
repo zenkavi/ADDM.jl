@@ -200,6 +200,7 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
 
             # If the RDV hit one of the barriers, the trial is over.
             # Decision related accummulation here so barrier might have decayed
+            # Note that this assumes symmetric boundaries
             if abs(RDV) >= barrierUp[cumTimeStep]
                 choice = RDV >= 0 ? -1 : 1
                 push!(fixRDV, RDV)

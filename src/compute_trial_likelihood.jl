@@ -19,7 +19,7 @@ Returns:
 function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10.0, 
                                    stateStep::Number = 0.01, debug = false)
     
-    # Iterate over the fixations and discount the non-decision time.
+    # Iterate over the fixations, subtract the non-decision time fixationTimes and replace fixation locations with 0 for that duration.
     if model.nonDecisionTime > 0
         correctedFixItem = Number[]
         correctedFixTime = Number[]
@@ -105,6 +105,11 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
         cdfUp = similar(changeUp[:, time])
         cdfDown = similar(changeDown[:, time])
         
+        # We use a normal distribution to model changes in RDV
+        # stochastically. The mean of the distribution (the change most
+        # likely to occur) is calculated from the model parameters and from
+        # the item values.
+
         @. normpdf = pdf(Normal(μDict[fItem], model.σ), changeMatrix)
         @. cdfUp = cdf(Normal(μDict[fItem], model.σ), changeUp[:, time])
         @. cdfDown = cdf(Normal(μDict[fItem], model.σ), changeDown[:, time])
@@ -115,16 +120,16 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
     
     # Iterate over all fixations in this trial.
     for (fItem, fTime) in zip(correctedFixItem, correctedFixTime)
-        # We use a normal distribution to model changes in RDV
-        # stochastically. The mean of the distribution (the change most
-        # likely to occur) is calculated from the model parameters and from
-        # the item values.
-        μ = μDict[fItem]
+        
+        # Select the correct change matrices for this fixation
         normpdf = pdfDict[fItem]
         cdfUp = cdfUpDict[fItem]
         cdfDown = cdfDownDict[fItem]
         
         # Iterate over the time interval of this fixation.
+        # t is not used in the rest of the loop
+        # Instead time is used for indexing and incremented to keep track of trial time
+        # Not just the duration of a single fixation
         for t in 1:Int64(fTime ÷ timeStep)
             # Update the probability of the states that remain inside the 
             # barriers. The probability of being in state B is the sum, 

@@ -1,6 +1,6 @@
 # Defining custom models
 
-Though the packages comes with the standard attentional DDM that allows for multiplicative and additive discounting of unattended items, users might also conceive of other generative processes (within the sequantial sampling to a bound framework) that give rise to observed choices and response times.  
+Though the toolbox comes with the standard attentional DDM that allows for multiplicative and additive discounting of unattended items, users might also conceive of other generative processes (within the sequantial sampling to a bound framework) that give rise to observed choices and response times.  
 
 In this tutorial we lay out the framework for how to incorporate such models within our toolbox to take advantage of Julia's processing speed.  
 
@@ -9,24 +9,25 @@ Broadly, this involves defining three parts:
 1. trial simulator describing how the new parameter changes the data generating process resulting in a choice and response time
     - this is then fed into `ADDM.simulate_data` along with the model object and stimuli to generate choice and response times.
 2. model object with new parameter
-    - this is only a container of key-value pairs of parameter names and values used a convenient wrapper to feed into the simulator and likelihood computer.
-3. trial likelihood function computing the probability of the observed choice and response time
+    - this is only a container of key-value pairs of parameter names and values used as a convenient wrapper to feed into the simulator and likelihood computer.
+3. trial likelihood function computing the probability of the observing a given choice and response time for a combinaton of parameter specified in the model object
     - this is then fed into `ADDM.grid_search` along with the data you want to compute the likelihoods for and the parameter search space.
 
 Let's begin with importing the packages we'll use in this tutorial.
 
 ```@repl 5
-using ADDM, CSV, DataFrames, DataFramesMeta, Distributions, LinearAlgebra, StatsPlots
+using ADDM, CSV, DataFrames, DataFramesMeta, Dates, Distributions, LinearAlgebra, StatsPlots
 ```
 
 ## Define simulator
 
 The built-in model has a `decay` parameter for a linear decay of the `barrier`. Let's build a model with an exponential decay of the barrier such that the barrier at each timestep is defined as `barrier(t) = exp(-λt)`.
 
-Based on the [built-in trial simulators as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/simulate_data.jl#L39) the trial simulator would look like [this](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/docs/src/tutorials/my_trial_simulator.jl). The custom model trial simulator is identical to the built-in simulators except for where the barriers for the accummulation process is defined:
+Based on the [built-in trial simulators as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/simulate_data.jl#L39) the trial simulator would look like [this](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/data/my_trial_simulator.jl). The custom model trial simulator is identical to the built-in simulators except for where the barriers for the accummulation process is defined:
 
 ```@repl 5
-include("my_trial_simulator.jl"); nothing # hide
+data_path = joinpath(dirname(dirname(pathof(ADDM))), "data/"); # hide
+include(data_path * "my_trial_simulator.jl"); nothing # hide
 ```
 
 ```julia
@@ -63,7 +64,7 @@ my_model = ADDM.define_model(d = 0.007, σ = 0.03, θ = .6, barrier = 1, nonDeci
 ```
 
 ```@repl 5
-my_model.λ = .05;
+my_model.λ = .0005;
 ```
 
 The `ADDM.define_model` function is limited to the standard parameter names. So the new parameter `λ` is added to the model after its creation. Alternatively, we can create an empty model object and add our parameters individually.
@@ -77,7 +78,7 @@ my_model.η = 0
 my_model.barrier = 1
 my_model.nonDecisionTime = 100
 my_model.bias = 0.0
-my_model.λ = .05
+my_model.λ = .0005
 ```
 
 ### Simulate data
@@ -89,13 +90,13 @@ Now that we have defined the generative process (the simulator function) and the
 We will use data from Tavares et al. (2017) that [comes with the toolbox](https://github.com/aDDM-Toolbox/ADDM.jl/tree/main/data). Importantly, we will *only* be using the stimuli and fixations from this dataset, *not* the empirical choice and response times. This is ensured by the `stimsOnly` argument of the `ADDM.load_data_from_csv` function. By using the stimuli and the fixations to sample from, we will generate choice and response using our custom simulator function. 
 
 ```@repl 5
-data = ADDM.load_data_from_csv("../../../data/stimdata.csv", "../../../data/fixations.csv"; stimsOnly = true);
+data = ADDM.load_data_from_csv(data_path * "stimdata.csv", data_path * "fixations.csv"; stimsOnly = true);
 ```
 
 Extract stimulus values from this dataset and wrangle into the format expected by the simulator function.
 
 ```@repl 5
-nTrials = 2400;
+nTrials = 600;
 my_stims = (valueLeft = reduce(vcat, [[i.valueLeft for i in data[j]] for j in keys(data)])[1:nTrials], valueRight = reduce(vcat, [[i.valueRight for i in data[j]] for j in keys(data)])[1:nTrials]);
 ```
 
@@ -119,15 +120,15 @@ my_sim_data = ADDM.simulate_data(my_model, my_stims, my_trial_simulator, my_args
 
 ## Define likelihood function
 
-Based on the [built-in likelihood function as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/compute_likelihood.jl#L17) the custom likelihood function would look like [this](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/docs/src/tutorials/my_likelihood_fn.jl). The custom likelihood function is identical to the built-in function except for where the barriers for the accummulation process is defined:
+Based on the [built-in likelihood function as defined here](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/src/compute_likelihood.jl#L17) the custom likelihood function would look like [this](https://github.com/aDDM-Toolbox/ADDM.jl/blob/main/data/my_likelihood_fn.jl). The custom likelihood function is identical to the built-in function except for where the barriers for the accummulation process is defined:
 
 ```@repl 5
-include("my_likelihood_fn.jl"); nothing # hide
+include(data_path * "my_likelihood_fn.jl"); nothing # hide
 ```
 
 ```julia
 function my_likelihood_fn(;model::ADDM.aDDM, trial::ADDM.Trial, timeStep::Number = 10.0, 
-                                   stateStep::Number = 0.1)
+                                   stateStep::Number = 0.01)
     
     [...]
 
@@ -161,7 +162,7 @@ Now that we have generated some data using known parameters with our custom simu
 #### Define search grid
 
 ```@repl 5
-fn = "../../../data/custom_model_grid.csv";
+fn = data_path * "custom_model_grid.csv";
 tmp = DataFrame(CSV.File(fn, delim=","));
 param_grid = NamedTuple.(eachrow(tmp));
 ```
@@ -171,20 +172,23 @@ param_grid = NamedTuple.(eachrow(tmp));
 ```@repl 5
 fixed_params = Dict(:η=>0.0, :barrier=>1, :decay=>0, :nonDecisionTime=>100, :bias=>0.0);
 
-my_likelihood_args = (timeStep = 10.0, stateStep = 0.1);
+my_likelihood_args = (timeStep = 10.0, stateStep = 0.01);
 
+t1 = now();
 output = ADDM.grid_search(my_sim_data, param_grid, my_likelihood_fn,
     fixed_params, 
     likelihood_args=my_likelihood_args, 
-    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true);
+    return_grid_nlls = true, return_trial_posteriors = true, return_model_posteriors = true,
+    return_trial_likelihoods = true);
+t2 = now();
 
-best_pars = output[:best_pars];
+mle = output[:mle];
 nll_df = output[:grid_nlls];
 trial_posteriors = output[:trial_posteriors];
 model_posteriors = output[:model_posteriors];
 ```
 
-The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .05`. Even with smaller state space step size the correct decay is not recovered. Instead, the fast response times are attributed to faster drift rates and larger sigmas.
+The true parameters are `d = 0.007, σ = 0.03, θ = .6, λ = .0005`. Theta and lambda are recovered correctly but not the d and sigma.
 
 ```@repl 5
 sort!(nll_df, [:nll]);
@@ -192,18 +196,52 @@ sort!(nll_df, [:nll]);
 show(nll_df, allrows = true)
 ```
 
-The posteriors have no uncertainty either.
+How do the model posteriors evolve with each observation?
 
 ```@repl 5
-marginal_posteriors = ADDM.marginal_posteriors(param_grid, model_posteriors, true);
+# Initialize empty df
+trial_posteriors_df = DataFrame();
 
-ADDM.margpostplot(marginal_posteriors)
+for i in 1:nTrials
+
+  # Get the posterior for each model after the curent trial
+  cur_trial_posteriors = DataFrame(keys(trial_posteriors))
+  cur_trial_posteriors[!, :posterior] = [x[i] for x in values(trial_posteriors)]
+  
+  # Add the trial information
+  cur_trial_posteriors[!, :trial_num] .= i
+
+  # Add the current trial posterior to the initialized df
+  trial_posteriors_df = vcat(trial_posteriors_df, cur_trial_posteriors, cols=:union)
+end;
+
+@transform!(trial_posteriors_df, @byrow :modelnum = string(:d) * string(:sigma) * string(:theta)* string(:lambda))
+
+@df trial_posteriors_df plot(
+      :trial_num,
+      :posterior,
+      group = :modelnum,
+      xlabel = "Trial",
+      ylabel = "Posterior p",
+      legend = false
+  )
 
 savefig("plot_4_1.png"); nothing # hide
 ```
 ![plot](plot_4_1.png)
 
-How do the posteriors change across trials?
+As expected from the trajectory of the model posteriors, there is no uncertainty in the parameter posteriors.
+
+```@repl 5
+marginal_posteriors = ADDM.marginal_posteriors(model_posteriors, two_d_marginals = true);
+
+ADDM.marginal_posterior_plot(marginal_posteriors)
+
+savefig("plot_4_2.png"); nothing # hide
+```
+![plot](plot_4_2.png)
+
+How do the parameter posteriors change across trials?
 
 ```@repl 5
 trial_param_posteriors = DataFrame();
@@ -214,7 +252,7 @@ for i in 1:nTrials
   cur_trial_posteriors = Dict(zip(keys(trial_posteriors), [x[i] for x in values(trial_posteriors)]))
 
   # Use built-in function to marginalize for each parameter
-  cur_param_posteriors = ADDM.marginal_posteriors(param_grid, cur_trial_posteriors)
+  cur_param_posteriors = ADDM.marginal_posteriors(cur_trial_posteriors)
 
   # Wrangle the output to be a single df and add trial number info
   for j in 1:length(cur_param_posteriors)
@@ -253,6 +291,52 @@ end;
 
 plot(plot_array...)
 
-savefig("plot_4_2.png"); nothing # hide
+savefig("plot_4_3.png"); nothing # hide
 ```
-![plot](plot_4_2.png)
+![plot](plot_4_3.png)
+
+How about the posterior predictive data?
+
+```@repl 5
+posteriors_df = DataFrame();
+
+for (k, v) in model_posteriors
+  cur_row = DataFrame([k])
+  cur_row.posterior = [v]
+  posteriors_df = vcat(posteriors_df, cur_row, cols=:union)
+end;
+
+bestModelPars = @chain posteriors_df begin
+    combine(_) do sdf
+        sdf[argmax(sdf.posterior), :]
+    end
+  end;
+
+est_model = ADDM.define_model(d = bestModelPars.d[1], σ = bestModelPars.sigma[1], θ = bestModelPars.theta[1], barrier = 1, nonDecisionTime = 100, bias = 0.0)
+
+est_model.λ = bestModelPars.lambda[1];
+
+est_sim_data = ADDM.simulate_data(est_model, my_stims, my_trial_simulator, my_args);
+
+## Define the limit for the x-axis based on true data
+rts = [i.RT * i.choice for i in my_sim_data]; #left choice rt's are negative
+l = abs(minimum(rts)) > abs(maximum(rts)) ? abs(minimum(rts)) : abs(maximum(rts))
+
+## Split the RTs for left and right choice. Left is on the left side of the plot
+rts_pos = [i.RT for i in my_sim_data if i.choice > 0];
+rts_neg = [i.RT * (-1) for i in my_sim_data if i.choice < 0];
+
+rts_pos_est = [i.RT for i in est_sim_data if i.choice > 0];
+rts_neg_est = [i.RT * (-1) for i in est_sim_data if i.choice < 0];
+
+histogram(rts_pos, normalize=true, bins = range(-l, l, length=41), fillcolor = "gray", yaxis = false, grid = false, label = "True data")
+density!(rts_pos_est, label = "Best model", linewidth = 3, linecolor = "blue")
+
+histogram!(rts_neg, normalize=true, bins = range(-l, l, length=41), fillcolor = "gray", label = "")
+density!(rts_neg_est, linewidth = 3, linecolor = "blue", label = "")
+
+vline!([0], linecolor = "red", label = "")
+
+savefig("plot_4_4.png"); nothing # hide
+```
+![plot](plot_4_4.png)

@@ -19,6 +19,19 @@ Briefly, the FPE describes how a probability distribution changes over time. Sin
 
 Here, we'll try to keep things intuitive. 
 
+Let's start with a simple example. We'll use a simplified classic DDM (not attentional) to illustrate the main points.
+
+```@repl 2
+using ADDM, CSV, DataFrames, DataFramesMeta
+using Plots, StatsPlots, Random, Plots.PlotMeasures
+Random.seed!(38435)
+
+m = ADDM.define_model(d = 0.007, σ = 0.03, barrier = 1, 
+                       decay = 0, nonDecisionTime = 100, bias = 0.0)
+
+t = ADDM.DDM_simulate_trial(model = m, valueLeft = 2, valueRight = 1)
+```
+
 ![plot](Gabi_S2.png)
 
 Ok so what is the effect of the discretization step sizes (in both time and space)

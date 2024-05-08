@@ -1,14 +1,46 @@
 """
-    Trial(choice, RT, valueLeft, valueRight)
+Constructor for trial definitions that will contain choice RT and other trial info. 
+  Not intended to be used alone but as part of `make_trial`
+
+# Example
+
+```julia
+julia> t = ADDM.Trial()
+ADDM.Trial(Dict{Symbol, Any}())
+
+julia> t.choice = 1
+1
+
+julia> t.RT = 100
+100
+
+julia> propertynames(t)
+KeySet for a Dict{Symbol, Any} with 2 entries. Keys:
+  :choice
+  :RT
+```
+
+"""
+struct Trial
+  properties::Dict{Symbol, Any}
+end
+Trial() = Trial(Dict{Symbol, Any}())
+
+Base.getproperty(x::Trial, property::Symbol) = getfield(x, :properties)[property]
+Base.setproperty!(x::Trial, property::Symbol, value) = getfield(x, :properties)[property] = value
+Base.propertynames(x::Trial) = keys(getfield(x, :properties))
+
+"""
+    make_trial(;choice, RT)
 
 # Arguments
 ## Required keyword arguments
 - `choice`: either -1 (for left item) or +1 (for right item).
 - `RT`: response time in milliseconds.
-- `valueLeft`: value of the left item.
-- `valueRight`: value of the right item.
 
 ## Optional 
+- `valueLeft`: value of the left item.
+- `valueRight`: value of the right item.
 - `fixItem`: list of items fixated during the trial in chronological
     order; 1 correponds to left, 2 corresponds to right, and any
     other value is considered a transition/blank fixation.
@@ -23,47 +55,27 @@
 
 # Example
 
-```julia
-julia> t = Trial(choice = 1, RT = 2145, valueLeft = 1, valueRight = 3)
-Trial(1, 2145, 1, 3, #undef, #undef, #undef, #undef, #undef)
-
-julia> t.RT
-2145
-
-julia> t.uninterruptedLastFixTime
-ERROR: UndefRefError: access to undefined reference
-Stacktrace:
- [1] getproperty(x::Trial, f::Symbol)
-   @ Base ./Base.jl:37
- [2] top-level scope
-   @ REPL[4]:1
-
-julia> t.uninterruptedLastFixTime = 189
-189
-
-julia> t
-Trial(1, 2145, 1, 3, #undef, #undef, #undef, 189, #undef)
 ```
+julia> t = ADDM.make_trial(choice = 1, RT = 100)
+ADDM.Trial(Dict{Symbol, Any}(:choice => 1, :RT => 100))
+
+julia> propertynames(t)
+KeySet for a Dict{Symbol, Any} with 2 entries. Keys:
+  :choice
+  :RT
+```
+
 """
-mutable struct Trial
-    
-    # Required components of a Trial
-    # They are keyword arguments without defaults which makes them required
-    choice::Number
-    RT::Number
-    valueLeft::Number
-    valueRight::Number
+function make_trial(;choice::Number, RT::Number)
+  
+  # Required parameters
+  t = Trial()
 
-    # Optional components
-    fixItem::Vector{Number}
-    fixTime::Vector{Number}
-    fixRDV::Vector{Number}
-    uninterruptedLastFixTime::Number
-    RDV::Vector{Number}
+  ## Required definitions
+  t.choice = choice
+  t.RT = RT
 
-    # Incomplete initialization allows for defining optional components later
-    # To create a Trial one must only provide the choice, RT and values
-    Trial(;choice, RT, valueLeft, valueRight) = new(choice, RT, valueLeft, valueRight)
+  return t
 end
 
 """
@@ -121,15 +133,23 @@ Create attentional drift diffusion model with parameters described in
 - `bias`: Number, corresponds to the initial value of the relative decision value
     variable. Must be smaller than barrier.
 
-# Todo
-- Tests
-- Change decay parameter to function instead of scalar
 
 # Example
 
 ```julia
 julia> MyModel = define_model(d = .006, σ = 0.05)
 aDDM(Dict{Symbol, Any}(:nonDecisionTime => 0, :σ => 0.05, :d => 0.006, :bias => 0.0, :barrier => 1, :decay => 0, :θ => 1.0, :η => 0.0))
+
+julia> propertynames(MyModel)
+KeySet for a Dict{Symbol, Any} with 8 entries. Keys:
+  :nonDecisionTime
+  :σ
+  :d
+  :bias
+  :barrier
+  :decay
+  :θ
+  :η
 ````
 
 """

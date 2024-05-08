@@ -62,9 +62,15 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing; stimsO
             itemLeft = trial_df.item_left[1]
             itemRight = trial_df.item_right[1]
             if stimsOnly
-              push!(data[subjectId], Trial(choice = NaN, RT = NaN, valueLeft = itemLeft, valueRight = itemRight) ) 
+              t = make_trial(choice = NaN, RT = NaN)
+              t.valueLeft = itemLeft
+              t.valueRight = itemRight
+              push!(data[subjectId], t ) 
             else
-              push!(data[subjectId], Trial(choice = trial_df.choice[1], RT = trial_df.rt[1], valueLeft = itemLeft, valueRight = itemRight) ) 
+              t = make_trial(choice = trial_df.choice[1], RT = trial_df.rt[1])
+              t.valueLeft = itemLeft
+              t.valueRight = itemRight
+              push!(data[subjectId], t ) 
             end
         end
     end
@@ -94,7 +100,6 @@ function load_data_from_csv(expdataFileName, fixationsFileName = nothing; stimsO
           trialIds = unique(parcode_df.trial)
           for (t, trialId) in enumerate(trialIds)
               trial_df = parcode_df[parcode_df.trial .== trialId, [:fix_item, :fix_time]]
-              dataTrial = Matrix(trial_df)
               data[subjectId][t].fixItem = trial_df.fix_item
               data[subjectId][t].fixTime = trial_df.fix_time
           end

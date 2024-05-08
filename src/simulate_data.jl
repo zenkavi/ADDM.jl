@@ -78,7 +78,10 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
             trialTime += t * timeStep
             RT = trialTime
             uninterruptedLastFixTime = latency
-            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            # trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+            trial = make_trial(choice = choice, RT = RT)
+            trial.valueLeft = valueLeft
+            trial.valueRight = valueRight
             trial.fixItem = fixItem 
             trial.fixTime = fixTime 
             trial.fixRDV = fixRDV
@@ -228,7 +231,10 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
 
     end
 
-    trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+    # trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+    trial = make_trial(choice = choice, RT = RT)
+    trial.valueLeft = valueLeft
+    trial.valueRight = valueRight
     trial.fixItem = fixItem 
     trial.fixTime = fixTime 
     trial.fixRDV = fixRDV
@@ -255,55 +261,62 @@ Generate a DDM trial given the item values.
     # Returns
 - A Trial object resulting from the simulation.
 """
-function DDM_simulate_trial(;model::aDDM, valueLeft::Number, valueRight::Number,
+function DDM_simulate_trial(;model::ADDM.aDDM, valueLeft::Number, valueRight::Number,
                             timeStep::Number = 10.0, cutOff::Int64 = 20000)
-    
+
     RDV = model.bias
-    elapsedNDT = 0
     ndtTimeSteps = round(model.nonDecisionTime ÷ timeStep)
-    tRDV = Vector{Number}(undef, cutOff)
-    valueDiff = model.d * (valueLeft - valueRight)
+    tRDV = Number[RDV]
+    valueDiff = (valueLeft - valueRight)
+    μ = model.d * (valueDiff)
 
-    # The values of the barriers can change over time.
+    trialTime = 0
+    choice = 0
+    RT = 0
+
     barrierUp = model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
-    barrierDown = -model.barrier ./ (1 .+ model.decay .* (0:cutOff-1))
 
-    for time in 0:cutOff-1
-        tRDV[time + 1] = RDV
+    if ndtTimeSteps > 0
+        for t in 1:Int64(ndtTimeSteps)
+            # Sample the change in RDV from the distribution.
+            RDV += rand(Normal(0, model.σ))
+            push!(tRDV, RDV)
 
-        # If the RDV hit one of the barriers, the trial is over.
-        # Barrier decays only for decision related timesteps
-        if abs(RDV) >= barrierUp[time - ndtTimeSteps]
-            choice = RDV >= 0 ? -1 : 1
-            RT =  time * timeStep
-            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
-            trial.RDV = tRDV[1:time + 1]
-            return trial
+            # If the RDV hit one of the barriers, the trial is over.
+            # No barrier decay before decision-related accummulation
+            if abs(RDV) >= model.barrier
+                choice = RDV >= 0 ? -1 : 1
+                trialTime += t * timeStep
+                RT = trialTime
+                break
+            end
         end
-
-        # If the response time is higher than the cutoff, the trial is over.
-        if time * timeStep >= cutOff
-            choice = RDV >= 0 ? -1 : 1
-            RT =  time * timeStep
-            trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
-            trial.RDV = tRDV[1:time + 1]
-            return trial
-        end
-
-        # Sample the change in RDV from the distribution.
-        if elapsedNDT < ndtTimeSteps
-            μ = 0
-            elapsedNDT += 1
-        else
-            μ = valueDiff
-        end
-
-        RDV += rand(Normal(μ, model.σ))
     end
 
-    choice = RDV >= 0 ? -1 : 1
-    RT = cutOff * timeStep
-    trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+    for t in 1:Int64(cutOff ÷ timeStep)
+        
+        # Sample the change in RDV from the distribution.
+        RDV += rand(Normal(μ, model.σ))
+        push!(tRDV, RDV)
+
+        # If the RDV hit one of the barriers, the trial is over.
+        # Decision related accummulation here so barrier might have decayed
+        # Note that this assumes symmetric boundaries
+        if abs(RDV) >= barrierUp[t]
+            choice = RDV >= 0 ? -1 : 1
+            trialTime += t * timeStep
+            RT = trialTime
+            break
+        else
+            choice = RDV >= 0 ? -1 : 1
+            RT = cutOff * timeStep
+        end
+    end
+
+    # trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)
+    trial = make_trial(choice = choice, RT = RT)
+    trial.valueLeft = valueLeft
+    trial.valueRight = valueRight
     trial.RDV = tRDV
     return trial
 end

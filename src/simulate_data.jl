@@ -286,8 +286,9 @@ function DDM_simulate_trial(;model::ADDM.aDDM, valueLeft::Number, valueRight::Nu
             # No barrier decay before decision-related accummulation
             if abs(RDV) >= model.barrier
                 choice = RDV >= 0 ? -1 : 1
-                trialTime += t * timeStep
-                RT = trialTime
+                # trialTime += t * timeStep
+                # RT = trialTime
+                RT = model.nonDecisionTime
                 break
             end
         end
@@ -305,11 +306,11 @@ function DDM_simulate_trial(;model::ADDM.aDDM, valueLeft::Number, valueRight::Nu
         if abs(RDV) >= barrierUp[t]
             choice = RDV >= 0 ? -1 : 1
             trialTime += t * timeStep
-            RT = trialTime
+            RT = trialTime + model.nonDecisionTime
             break
         else
             choice = RDV >= 0 ? -1 : 1
-            RT = cutOff * timeStep
+            RT = cutOff
         end
     end
 

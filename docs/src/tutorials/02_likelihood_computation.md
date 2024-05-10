@@ -16,7 +16,7 @@ Some methods to compute likelihoods of a single observed datapoint for sequentia
 4. Solving the Fokker Planck Equation (FPE): This relies on conceptualizing the relative decision value, the putative construct that accummulates towards a boundary to indicate a choice, as a probabilistic particle that moves in space and time. Briefly, the FPE describes how a probability distribution changes over time. Since it is an expression of change, formally it is written as a partial differential equation. We'll skip the details of the math here but for an in depth dive, please see Shinn et al.[^1].
 In addition to this toolbox[^2], the pyDDM package makes use of it as well.  
 
-Importantly, all of these methods compute the likelihood for a single observation. To choose the parameter combination that is the most similar to the data we need to take into account the likelihood of *all* observations. If we assume that each observation is independent from each other (i.e. that the decision-making process is the same in each trial[^3]) then the likelihood of all the observations would be the product of the likelihoods for each trial (like the probability of getting 3 heads in 5 coin flips). Since probabilities range from 0 to 1, this multiplication can create numerical challenges when working with computers (very small numbers). Therefore, raw likelihood values are converted to negative log likelihoods and summed across all observations. Conveniently, maximizing the likelihoods is equivalent to minimizing negative log likelihoods. So the parameter combination that yields the smallest negative log likelihood is called the "maximum likelihood estimate" (MLE).
+Importantly, all of these methods compute the likelihood for a single observation. To choose the parameter combination that is the most similar to the data we need to take into account the likelihood of *all* observations. If we assume that each observation is independent from each other (i.e. that the decision-making process is the same in each trial) then the likelihood of all the observations would be the product of the likelihoods for each trial (like the probability of getting 3 heads in 5 coin flips). Since probabilities range from 0 to 1, this multiplication can create numerical challenges when working with computers (very small numbers). Therefore, raw likelihood values are converted to negative log likelihoods. Conveniently, maximizing the likelihoods is equivalent to minimizing negative log likelihoods. So the parameter combination that yields the smallest sum of negative log likelihoods is called the "maximum likelihood estimate" (MLE).
 
 Likelihood-based (maximum likelihood) estimation is used in many different applications. Therefore there are many methods developed to determine how to search the parameter space to find the MLE. These are called optimization algorithms. Both built-in and custom likelihood functions in ADDM.jl can be used with various optimization algorithms (detailed [here](https://addm-toolbox.github.io/ADDM.jl/dev/tutorials/07_alt_optimization_algs/)). The built-in algorithm within ADDM.jl, grid computation, is perhaps the simplest. It requires the parameter space to be determined in advance, computes negative log likelihoods for each parameter combination and selects the combination that minimizes this. It is not the most computationally efficient method, instead we rely on Julia for speed, but one that gives researchers full control over their parameter space.
 
@@ -26,33 +26,126 @@ To summarize, parameter estimation for sequential sampling models involves three
 2. select method to compute metric: analytical solution, LAN, FPE etc.
 3. select algorthm to explore parameter space using the evaluation metric: grid computation, gradient descent etc.
 
-With this context
-
-To understand the effect of stateStep argument we will focus on how step 2 is implemented within ADDM.jl.
+With this context, we will focus on how step 2, the computation of a single observation's likelihood, is implemented within ADDM.jl to understand the effect of `stateStep` argument.
 
 ## Likelihood of a single trial
 
-Let's start with a simple example. We'll use a simplified classic DDM (not attentional) to illustrate the main points.
+Let's start with a simple example. We'll use a simplified classic DDM (not attentional) to illustrate the main points. Similar to the previous tutorial, first we'll define a model a simulate a single trial using it.
 
 ```@repl 2
 using ADDM, CSV, DataFrames, DataFramesMeta
-using Plots, StatsPlots, Random, Plots.PlotMeasures
+using Distributions, Plots, StatsPlots, Random, Plots.PlotMeasures
 Random.seed!(38435)
 
 m = ADDM.define_model(d = 0.007, σ = 0.03, barrier = 1, 
-                       decay = 0, nonDecisionTime = 100, bias = 0.0)
+                       decay = 0, nonDecisionTime = 100, bias = 0.0);
 
 t = ADDM.DDM_simulate_trial(model = m, valueLeft = 2, valueRight = 1.5)
+```
 
+Then we'll define a second model, one that has a larger `σ` and compare the likelihood of observing the simulated trial for both models.
+
+```@repl 2
 m2 = ADDM.define_model(d = 0.007, σ = 0.05, barrier = 1, 
-                       decay = 0, nonDecisionTime = 100, bias = 0.0)
+                       decay = 0, nonDecisionTime = 100, bias = 0.0);
 
 ADDM.DDM_get_trial_likelihood(model = m2, trial = t, stateStep = .1) > ADDM.DDM_get_trial_likelihood(model = m, trial = t, stateStep = .1)
+```
 
+```@repl 2
 ADDM.DDM_get_trial_likelihood(model = m2, trial = t, stateStep = .01) > ADDM.DDM_get_trial_likelihood(model = m, trial = t, stateStep = .01)
 ```
 
-![plot](Gabi_S2.png)
+As in the previous tutorial, we find that the incorrect model has a larger likelihood than the correct model when computing the likelihood using a `stateStep` of .1 instead of .01.
+
+Since the trial is simulated we can examine the evolution of the relative decision variable (RDV). This is not necessary (nor is it possible with empirical data) but is intended to develop intuitions.
+
+```@repl 2
+# Draw background once keeps the trace.
+plot(legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)")
+hline!([-1, 1], line = (:black, 5))
+hline!([0], line = (:gray, 1))
+vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
+
+# @gif for i in 1:length(t.RDV)
+#   # If you don't want the trace include the plot background in the loop
+#   plot!([i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
+# end
+
+a = Animation()
+	
+for i in 1:length(t.RDV)
+    plt = plot!([i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
+    frame(a, plt)
+end
+	
+gif(a)
+```
+
+
+```
+
+!!! note
+
+    Choice is coded as `-1` but the animation is showing the RDV hit the top boundary denoted as 1.  This is a strange custom based on the analytical solution of the WFTP where the left choice is denoted as -1. The top boundary is coded as 1 and corresponds to the left choice although the `.choice` property of `ADDM.Trial` is -1.
+
+
+
+```@repl 2
+plot(legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)", title = "State step = .1")
+hline!([-1, 1], line = (:black, 5))
+hline!([0], line = (:gray, 1))
+vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
+vline!([1:100:t.RT], line = (:green, 1))
+hline!([-1:.1:1], line = (:green, 1))
+i = 11
+plot!([i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
+
+
+plot(legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)", title = "State step = .01")
+hline!([-1, 1], line = (:black, 5))
+hline!([0], line = (:gray, 1))
+vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
+vline!([1:100:t.RT], line = (:green, 1))
+hline!([-1:.01:1], line = (:green, 1))
+
+
+plot(Normal(m.d,m.σ), legend = false, grid = false, showaxis = :x)
+vline!([m.d], line = (:gray, 1), linestyle = :dash)
+
+# Specify layout
+l = @layout [a b]
+p = plot(layout = l)
+# Background 1
+plot!(p[1], legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)")
+hline!(p[1], [-1, 1], line = (:black, 5))
+hline!(p[1], [0], line = (:gray, 1))
+vline!(p[1], [m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
+# Background 2
+plot!(p[2], Normal(m.d,m.σ), legend = false, grid = false, showaxis = :x, color = :black)
+vline!(p[2], [m.d], line = (:gray, 1), linestyle = :dash)
+
+@gif for i in 1:length(t.RDV)
+  # l = @layout [a b]
+  # p = plot(layout = l)
+  # # Background 1
+  # plot!(p[1], legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)")
+  # hline!(p[1], [-1, 1], line = (:black, 5))
+  # hline!(p[1], [0], line = (:gray, 1))
+  # vline!(p[1], [m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
+  plot!(p[1], [i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
+  if i == 1
+    samp = t.RDV[i]
+  else
+    samp = t.RDV[i] - t.RDV[i-1]
+  end
+  # plot!(p[2], Normal(m.d, m.σ), legend = false, grid = false, showaxis = :x, color = :black)
+  # vline!(p[2], [m.d], line = (:gray, 1), linestyle = :dash)
+  # vline!(p[2], [samp], line = (:blue, 1))
+  vline!(p[2], [samp], line = (:blue, 1), linealpha = 0.0)
+end
+
+```
 
 ## The problem in the previous tutorial
 
@@ -180,5 +273,3 @@ plot(plot_array...)
 [^1]: For a more detailed overview see *Shinn, M., Lam, N. H., & Murray, J. D. (2020). A flexible framework for simulating and fitting generalized drift-diffusion models. ELife, 9, e56938.*
 
 [^2]: More specifically, the built-in functions provide use the Forward-Euler method to solve the FPE.  
-
-[^3]: This assumption might not always be appropriate.

@@ -258,12 +258,14 @@ Compute the likelihood of either observed or simulated data for all parameter co
   Should be a vector of `ADDM.Trial` objects.
 - `param_grid`: Parameter combinations for which the sum of nll's for the `data` is 
   computed. Vector of NamedTuples. E.g.
-  ```
- 15-element Vector{@NamedTuple{d::Float64, sigma::Float64, theta::Float64, likelihood_fn::String}}:
-  (d = 0.001, sigma = 0.01, theta = 0.12, likelihood_fn = "ADDM.aDDM_get_trial_likelihood")
-  (d = 0.002, sigma = 0.01, theta = 0.12, likelihood_fn = "ADDM.aDDM_get_trial_likelihood")
-  ...
- ```
+
+```
+15-element Vector{@NamedTuple{d::Float64, sigma::Float64, theta::Float64, likelihood_fn::String}}:
+(d = 0.001, sigma = 0.01, theta = 0.12, likelihood_fn = "ADDM.aDDM_get_trial_likelihood")
+(d = 0.002, sigma = 0.01, theta = 0.12, likelihood_fn = "ADDM.aDDM_get_trial_likelihood")
+...
+```
+ 
 - `likelihood_fn`: Name of likelihood function to be used to compute likelihoods. 
   The toolbox has `ADDM.aDDM_get_trial_likelihood` and `ADDM.DDM_get_trial_likelihood` defined.
   If comparing different generative processes then leave at default value of `nothing`

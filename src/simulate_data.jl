@@ -104,7 +104,7 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
 
     # Begin decision related accummulation
     cumTimeStep = 0
-    while true
+    while cumTimeStep < Int64(cutOff ÷ timeStep)
         if currFixLocation == 0
             # This is an item fixation; sample its location.
             if prevFixItem == -1
@@ -229,6 +229,11 @@ function aDDM_simulate_trial(;model::aDDM, fixationData::FixationData,
         push!(fixTime, currFixTime - (currFixTime % timeStep))
         trialTime += currFixTime - (currFixTime % timeStep)
 
+    end
+
+    if !decisionReached
+      choice = RDV >= 0 ? -1 : 1
+      RT = cutOff
     end
 
     # trial = Trial(choice = choice, RT = RT, valueLeft = valueLeft, valueRight = valueRight)

@@ -82,9 +82,9 @@ function aDDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number 
     μDict = Dict{Number, Number}()
     for fItem in 0:2
         if fItem == 1
-            μ = model.d * ((trial.valueLeft + model.η) - (model.θ * trial.valueRight))
+            μ = (model.d * (trial.valueLeft - (model.θ * trial.valueRight))) + model.η
         elseif fItem == 2
-            μ = model.d * ((model.θ * trial.valueLeft) - (trial.valueRight + model.η))
+            μ = (model.d * ((model.θ * trial.valueLeft) - trial.valueRight)) - model.η
         else
             μ = 0
         end

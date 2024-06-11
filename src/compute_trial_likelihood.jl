@@ -324,6 +324,9 @@ Compute likelihood of a dataset for a given model.
 - `likelihood_args`: Named tuple containing kwargs that should be fed to `likelihood_fn`
 - `return_trial_likelihoods`: Boolean to specify whether to return the likelihoods for each trial
 - `sequential_model`: Boolean to specify if the model requires all data concurrently (e.g. RL-DDM). If `true` model cannot be multithreaded
+- `compute_trials_exec` =  Executor used by `FLoops.jl` to parallelize computation of each trial's likelihood over
+threads. Default is `ThreadedEx()`. Other options are `DistributedEx()` and `SequentialEx()`. See `FLoops.jl` 
+documentation for more details.
 
 # Returns
 - Negative log likelihood of data

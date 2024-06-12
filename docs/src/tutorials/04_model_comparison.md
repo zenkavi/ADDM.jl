@@ -92,9 +92,9 @@ sort(posteriors_df1, :posterior, rev=true)
 ```@repl 4
 @df plot_df bar(:x_label, :posterior, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
-savefig("plot_3_1.png"); nothing # hide
+savefig("plot_4_1.png"); nothing # hide
 ```
-![plot](plot_3_1.png)
+![plot](plot_4_1.png)
 
 #### Trialwise changes to the model posteriors
 
@@ -135,10 +135,10 @@ Then, plot changes to posteriors of each model across trials. Note, we have omit
       legend = false
   )
 
-savefig("plot_3_2.png"); nothing # hide
+savefig("plot_4_2.png"); nothing # hide
 ```
 
-![plot](plot_3_2.png)
+![plot](plot_4_2.png)
 
 
 ### Parameter posteriors
@@ -156,10 +156,10 @@ for plot_df in param_posteriors
 end;
 plot(plot_array...) 
 
-savefig("plot_3_3.png"); nothing # hide
+savefig("plot_4_3.png"); nothing # hide
 ```
 
-![plot](plot_3_3.png)
+![plot](plot_4_3.png)
 
 We can also use the `ADDM.marginal_posteriors` function to compute parameter posteriors with respect to each other by specifying the second positional argument. When set to `true`, the `ADDM.marginal_posteriors` function returns pairwise marginal distributions that can be plotted as heatmaps to visualize conditional distributions of the parameters.   
 
@@ -172,10 +172,10 @@ The toolbox includes a visualization function, `ADDM.marginal_posterior_plot` th
 ```@repl 4
 ADDM.marginal_posterior_plot(all_marginal_posteriors)
 
-savefig("plot_3_4.png"); nothing # hide
+savefig("plot_4_4.png"); nothing # hide
 ```
 
-![plot](plot_3_4.png)
+![plot](plot_4_4.png)
 
 #### Trialwise changes to the parameter posteriors
 
@@ -234,9 +234,9 @@ end
 
 plot(plot_array...)
 
-savefig("plot_3_5.png"); nothing # hide
+savefig("plot_4_5.png"); nothing # hide
 ```
-![plot](plot_3_5.png)
+![plot](plot_4_5.png)
 
 
 ## Comparing different generative processes
@@ -329,9 +329,9 @@ combdf = combine(gdf, :posterior => sum);
 
 @df combdf bar(:likelihood_fn, :posterior_sum, legend = false, xrotation = 45, ylabel = "p(model|data)",bottom_margin = (5, :mm))
 
-savefig("plot_3_6.png"); nothing # hide
+savefig("plot_4_6.png"); nothing # hide
 ```
-![plot](plot_3_6.png)
+![plot](plot_4_6.png)
 
 We can check how this conclusion evolved with the addition of each trial.
 
@@ -367,9 +367,9 @@ end;
       legend = true
   )
 
-savefig("plot_3_7.png"); nothing # hide
+savefig("plot_4_7.png"); nothing # hide
 ```
-![plot](plot_3_7.png)
+![plot](plot_4_7.png)
 
 ### Priors about models
 
@@ -501,7 +501,7 @@ density!(rts_neg_alt, linewidth = 3, linecolor = "green", label = "")
 
 vline!([0], linecolor = "red", label = "")
 
-savefig("plot_3_8.png"); nothing # hide
+savefig("plot_4_8.png"); nothing # hide
 ```
 
-![plot](plot_3_8.png)
+![plot](plot_4_8.png)

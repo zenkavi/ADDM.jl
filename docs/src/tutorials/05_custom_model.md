@@ -226,9 +226,9 @@ end;
       legend = false
   )
 
-savefig("plot_4_1.png"); nothing # hide
+savefig("plot_5_1.png"); nothing # hide
 ```
-![plot](plot_4_1.png)
+![plot](plot_5_1.png)
 
 As expected from the trajectory of the model posteriors, there is no uncertainty in the parameter posteriors.
 
@@ -237,9 +237,9 @@ marginal_posteriors = ADDM.marginal_posteriors(model_posteriors, two_d_marginals
 
 ADDM.marginal_posterior_plot(marginal_posteriors)
 
-savefig("plot_4_2.png"); nothing # hide
+savefig("plot_5_2.png"); nothing # hide
 ```
-![plot](plot_4_2.png)
+![plot](plot_5_2.png)
 
 How do the parameter posteriors change across trials?
 
@@ -291,9 +291,9 @@ end;
 
 plot(plot_array...)
 
-savefig("plot_4_3.png"); nothing # hide
+savefig("plot_5_3.png"); nothing # hide
 ```
-![plot](plot_4_3.png)
+![plot](plot_5_3.png)
 
 How about the posterior predictive data?
 
@@ -337,6 +337,6 @@ density!(rts_neg_est, linewidth = 3, linecolor = "blue", label = "")
 
 vline!([0], linecolor = "red", label = "")
 
-savefig("plot_4_4.png"); nothing # hide
+savefig("plot_5_4.png"); nothing # hide
 ```
-![plot](plot_4_4.png)
+![plot](plot_5_4.png)

@@ -60,91 +60,16 @@ As in the previous tutorial, we find that the incorrect model has a larger likel
 
 Since the trial is simulated we can examine the evolution of the relative decision variable (RDV). This is not necessary (nor is it possible with empirical data) but is intended to develop intuitions.
 
-```@repl 2
-# Draw background
-plot(legend = false, grid = false, ylims = [-1.1, 1.1], xlims = [0, t.RT+100], xlabel = "Time (ms)")
-hline!([-1, 1], line = (:black, 5))
-hline!([0], line = (:gray, 1))
-vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-
-# Static plot
-timeStep = 10
-plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255))
-plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255))
-
-# Add annotations for ndt and RT
-plot!([0, m.nonDecisionTime], [0, 0], line = (RGB(27/255,158/255,119/255) , 4))
-plot!([50,150],[0,.3], arrow = true, color = RGB(27/255,158/255,119/255), linewidth = 2)
-annotate!(200, .35, text("non-decision time", color = RGB(27/255,158/255,119/255), 8))
-
-plot!([t.RT, t.RT],[1,-.8], arrow = true, color = RGB(217/255,95/255,2/255), linewidth = 2)
-plot!([t.RT, t.RT], [-1, -.93], line = (RGB(217/255,95/255,2/255) , 4))
-annotate!(t.RT-200, -.87, text("response time = " * string(t.RT) * " ms", color = RGB(217/255,95/255,2/255), 8))
-
-
-```
-
+![plot](plot_2_1.png)
 
 !!! note
 
     Choice is coded as `-1` but the animation is showing the RDV hit the top boundary denoted as 1.  This is a strange custom based on the analytical solution of the WFTP where the left choice is denoted as -1. The top boundary is coded as 1 and corresponds to the left choice although the `.choice` property of `ADDM.Trial` is -1.
 
 
+Now let's look at the same plot with the sampling distribution for the RDV.
 
-```@repl 2
-# Static plot
-
-# Draw background
-plot(legend = false, grid = false, ylims = [-1.1, 1.1], xlims = [0, t.RT+100], xlabel = "Time (ms)", layout = 2, subplot = 1, size=(180*6,100*5))
-hline!([-1, 1], line = (:black, 5))
-hline!([0], line = (:gray, 1))
-vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-
-# Accummulation
-timeStep = 10
-plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255))
-plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255))
-
-# Highlight example RDV points
-plot!([510], [t.RDV[52]], marker = 2, color = RGB(123/255,50/255,148/255))
-plot!([520], [t.RDV[53]], marker = 2, color = RGB(166/255,219/255,160/255))
-plot!([530], [t.RDV[54]], marker = 2, color = RGB(194/255,165/255,207/255))
-plot!([540], [t.RDV[55]], marker = 2, color = RGB(0/255,136/255,55/255))
-
-# Inset zoom
-lens!([500, 550], [.3, .45];
-       inset=(1, bbox(0.4, 0.3, 0.12, 0.12)), 
-       subplot=3, ticks=false, framestyle=:box,
-       lw=2, lc=RGB(208/255,28/255,139/255))    
-
-
-# RDV sampling distribution
-mu = m.d*(t.valueLeft - t.valueRight)
-sd = m.σ
-s1 = L"d(V_L - V_R) = 0.0035";
-s2 = L"\sigma = 0.03"
-
-plot!(Normal(mu,sd), legend = false, grid = false, showaxis = :x, subplot=2)
-
-# Inset RDV sampling to the single plot
-# plot!(Normal(mu,sd), legend = false, grid = false, showaxis = :x, 
-#       inset=(1, bbox(0.3, 0.55, 0.4, 0.3)), subplot=3)
-
-# Add drift rate info
-plot!([mu, mu], [0, pdf(Normal(mu, sd), mu)], line = (:gray, 1), subplot=2)
-annotate!(mu-sd+.005, 1, text(s1, color = :gray, 8), subplot=2)
-
-# Add noise info
-plot!([mu, mu+sd], [pdf(Normal(mu, sd), mu+sd), pdf(Normal(mu, sd), mu+sd)], line = (:gray, 1), subplot=2)
-annotate!(mu+sd/2, pdf(Normal(mu, sd), mu+sd)+.5, text(s2, color = :gray, 8), subplot=2)
-
-plot!([diff(t.RDV)[51]], [pdf(Normal(mu, sd), diff(t.RDV)[51])], marker = 5, color = RGB(123/255,50/255,148/255), subplot=2)
-plot!([diff(t.RDV)[52]], [pdf(Normal(mu, sd), diff(t.RDV)[52])], marker = 5, color = RGB(166/255,219/255,160/255), subplot=2)
-plot!([diff(t.RDV)[53]], [pdf(Normal(mu, sd), diff(t.RDV)[53])], marker = 5, color = RGB(194/255,165/255,207/255), subplot=2)
-plot!([diff(t.RDV)[54]], [pdf(Normal(mu, sd), diff(t.RDV)[54])], marker = 5, color = RGB(0/255,136/255,55/255), subplot=2)
-
-```
-
+![plot](plot_2_2.png)
 
 ## The problem in the previous tutorial
 

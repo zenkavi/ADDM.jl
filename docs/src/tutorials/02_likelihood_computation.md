@@ -69,8 +69,8 @@ vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
 
 # Static plot
 timeStep = 10
-plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255), msa = 0.)
-plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255), msa = 0.)
+plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255))
+plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255))
 
 # Add annotations for ndt and RT
 plot!([0, m.nonDecisionTime], [0, 0], line = (RGB(27/255,158/255,119/255) , 4))
@@ -92,98 +92,59 @@ annotate!(t.RT-200, -.87, text("response time = " * string(t.RT) * " ms", color 
 
 
 ```@repl 2
+# Static plot
+
 # Draw background
-plot(legend = false, grid = false, ylims = [-1.1, 1.1], xlims = [0, t.RT+100], xlabel = "Time (ms)")
+plot(legend = false, grid = false, ylims = [-1.1, 1.1], xlims = [0, t.RT+100], xlabel = "Time (ms)", layout = 2, subplot = 1, size=(180*6,100*5))
 hline!([-1, 1], line = (:black, 5))
 hline!([0], line = (:gray, 1))
 vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
 
-# Static plot
+# Accummulation
 timeStep = 10
-plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255), msa = 0.)
-plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255), msa = 0.)
+plot!([0:timeStep:t.RT], [t.RDV], marker = 1, color = RGB(117/255,112/255,179/255))
+plot!([t.RT], [last(t.RDV)], marker = 6, color = RGB(217/255,95/255,2/255))
 
-plot!([510], [t.RDV[52]], marker = 2, color = RGB(123/255,50/255,148/255), msa = 0.)
-plot!([520], [t.RDV[53]], marker = 2, color = RGB(166/255,219/255,160/255), msa = 0.)
-plot!([530], [t.RDV[54]], marker = 2, color = RGB(194/255,165/255,207/255), msa = 0.)
-plot!([540], [t.RDV[55]], marker = 2, color = RGB(0/255,136/255,55/255), msa = 0.)
+# Highlight example RDV points
+plot!([510], [t.RDV[52]], marker = 2, color = RGB(123/255,50/255,148/255))
+plot!([520], [t.RDV[53]], marker = 2, color = RGB(166/255,219/255,160/255))
+plot!([530], [t.RDV[54]], marker = 2, color = RGB(194/255,165/255,207/255))
+plot!([540], [t.RDV[55]], marker = 2, color = RGB(0/255,136/255,55/255))
 
+# Inset zoom
 lens!([500, 550], [.3, .45];
        inset=(1, bbox(0.4, 0.3, 0.12, 0.12)), 
-       subplot=2, ticks=false, framestyle=:box,
+       subplot=3, ticks=false, framestyle=:box,
        lw=2, lc=RGB(208/255,28/255,139/255))    
 
-```
 
-```@repl 2
-plot(Normal(m.d*(t.valueLeft - t.valueRight),m.σ), legend = false, grid = false, showaxis = :x)
-vline!([m.d*(t.valueLeft - t.valueRight)], line = (:gray, 1), linestyle = :dash)
+# RDV sampling distribution
+mu = m.d*(t.valueLeft - t.valueRight)
+sd = m.σ
+s1 = L"d(V_L - V_R) = 0.0035";
+s2 = L"\sigma = 0.03"
 
-x = randn(10^3)
-x = rand(Normal(m.d*(t.valueLeft - t.valueRight),m.σ), 1000)
-p(x) = 1/sqrt(2pi) * exp(-x^2/2)
-plot(p, lw=3, color=:red, legend = false)
-vline!([m.d*(t.valueLeft - t.valueRight)], line = (:gray, 1), linestyle = :dash)
-# xlims!(-5, 5)
-ylims!(0, 0.5)
-```
+plot!(Normal(mu,sd), legend = false, grid = false, showaxis = :x, subplot=2)
 
+# Inset RDV sampling to the single plot
+# plot!(Normal(mu,sd), legend = false, grid = false, showaxis = :x, 
+#       inset=(1, bbox(0.3, 0.55, 0.4, 0.3)), subplot=3)
 
-```@repl 2
-plot(legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)", title = "State step = .1")
-hline!([-1, 1], line = (:black, 5))
-hline!([0], line = (:gray, 1))
-vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-vline!([1:100:t.RT], line = (:green, 1))
-hline!([-1:.1:1], line = (:green, 1))
-i = 11
-plot!([i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
+# Add drift rate info
+plot!([mu, mu], [0, pdf(Normal(mu, sd), mu)], line = (:gray, 1), subplot=2)
+annotate!(mu-sd+.005, 1, text(s1, color = :gray, 8), subplot=2)
 
+# Add noise info
+plot!([mu, mu+sd], [pdf(Normal(mu, sd), mu+sd), pdf(Normal(mu, sd), mu+sd)], line = (:gray, 1), subplot=2)
+annotate!(mu+sd/2, pdf(Normal(mu, sd), mu+sd)+.5, text(s2, color = :gray, 8), subplot=2)
 
-plot(legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)", title = "State step = .01")
-hline!([-1, 1], line = (:black, 5))
-hline!([0], line = (:gray, 1))
-vline!([m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-vline!([1:100:t.RT], line = (:green, 1))
-hline!([-1:.01:1], line = (:green, 1))
-
-
-plot(Normal(m.d,m.σ), legend = false, grid = false, showaxis = :x)
-vline!([m.d], line = (:gray, 1), linestyle = :dash)
-
-# Specify layout
-l = @layout [a b]
-p = plot(layout = l)
-# Background 1
-plot!(p[1], legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)")
-hline!(p[1], [-1, 1], line = (:black, 5))
-hline!(p[1], [0], line = (:gray, 1))
-vline!(p[1], [m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-# Background 2
-plot!(p[2], Normal(m.d,m.σ), legend = false, grid = false, showaxis = :x, color = :black)
-vline!(p[2], [m.d], line = (:gray, 1), linestyle = :dash)
-
-@gif for i in 1:length(t.RDV)
-  # l = @layout [a b]
-  # p = plot(layout = l)
-  # # Background 1
-  # plot!(p[1], legend = false, grid = false, ylims = [-1, 1], xlims = [0, t.RT], xlabel = "Time (ms)")
-  # hline!(p[1], [-1, 1], line = (:black, 5))
-  # hline!(p[1], [0], line = (:gray, 1))
-  # vline!(p[1], [m.nonDecisionTime], line = (:gray, 1), linestyle = :dash)
-  plot!(p[1], [i*10], [t.RDV[i]], marker = 4, color = :blue, msa = 0.)
-  if i == 1
-    samp = t.RDV[i]
-  else
-    samp = t.RDV[i] - t.RDV[i-1]
-  end
-  # plot!(p[2], Normal(m.d, m.σ), legend = false, grid = false, showaxis = :x, color = :black)
-  # vline!(p[2], [m.d], line = (:gray, 1), linestyle = :dash)
-  # vline!(p[2], [samp], line = (:blue, 1))
-  vline!(p[2], [samp], line = (:blue, 1), linealpha = 0.0)
-end
+plot!([diff(t.RDV)[51]], [pdf(Normal(mu, sd), diff(t.RDV)[51])], marker = 5, color = RGB(123/255,50/255,148/255), subplot=2)
+plot!([diff(t.RDV)[52]], [pdf(Normal(mu, sd), diff(t.RDV)[52])], marker = 5, color = RGB(166/255,219/255,160/255), subplot=2)
+plot!([diff(t.RDV)[53]], [pdf(Normal(mu, sd), diff(t.RDV)[53])], marker = 5, color = RGB(194/255,165/255,207/255), subplot=2)
+plot!([diff(t.RDV)[54]], [pdf(Normal(mu, sd), diff(t.RDV)[54])], marker = 5, color = RGB(0/255,136/255,55/255), subplot=2)
 
 ```
+
 
 ## The problem in the previous tutorial
 

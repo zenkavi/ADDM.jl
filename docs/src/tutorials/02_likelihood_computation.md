@@ -71,7 +71,11 @@ For this simulated trial the values were 2 for the left option and 1.5 for the r
     Choice is coded as `-1` but the animation is showing the RDV hit the top boundary denoted as 1.  This is a strange custom based on the analytical solution of the WFTP where the left choice is denoted as -1. The top boundary is coded as 1 and corresponds to the left choice although the `.choice` property of `ADDM.Trial` is -1.
 
 
-The period after the non-decision time, until the response time, is the decision time. During this period the DDM framework postulates that the evidence accummulation trajectory depends on the value difference. Specifically, in each time step the change in the RDV in sampled from a normal distribution with a mean proportional to the value difference between the options and a standard deviation defined in the model. The RDV sampling distribution describes how the other two parameters of the model, the drift rate `d` and noise level `σ`, relate to the decision process.     
+The period after the non-decision time, until the response time, is the decision time. During this period the DDM framework postulates that the evidence accummulation trajectory depends on the value difference. Specifically, in each time step the change in the RDV in sampled from a normal distribution with a mean proportional to the value difference between the options and a standard deviation defined in the model. The RDV sampling distribution describes how the other two parameters of the model, the drift rate `d` and noise level `σ`, relate to the decision process. This formally defined as 
+
+$$\triangle RDV = \mu \triangle t + \epsilon_{t},  $$
+$$\mu = d(V_{L}-V_{R}), $$
+$$\epsilon_{t} \overset{\mathrm{iid}}{\sim} N(0,\sigma)\ $$
 
 Below, on the left, we zoom into four points in the RDV trajectory for the same simulated decision as above. On the right, we depict the RDV sampling distribution and highlight the samples that lead to the zoomed in points on the left.
 
@@ -79,9 +83,37 @@ Below, on the left, we zoom into four points in the RDV trajectory for the same 
 
 Of course, we do not have access to the RDV trajectory for empirical behavior. Instead we only know the observed choice and the response time. We also know the hypothetical RDV sampling distribution and the non-decision time. 
 
+![plot](plot_2_3.png)
 
+Knowing these values and making some assumptions, we can compute the probability of the RDV crossing the boundary associated with the endorsed choice at the response time for this combination of parameters.
 
-What we want to know: Given the two sampling distributions, which one has the higher probability of generating the observed choice?
+We already have been assumming that time is discrete instead of continuous. Let's also assume that the RDV space is discrete. The `timeStep` and `stateStep` parameters control how we discretize these dimensions. A `timeStep` of 10 means we sample a new value to accummulate into the RDV every 10 ms. A `stateStep` of .1 is the approximate height of each slot between the two decision boundaries in the RDV space. For example, choosing a `stateStep` of .2 and `timeStep` of 100 would discretize the RDV space as follows:
+
+![plot](plot_2_4.png)
+
+This is a much coarser discretization than what we use for any parameter estimation but let's continue using it to demonstrate the key points of the likelihood computation.  
+
+The next assumption we need to make is on the initial state of the RDV. In our model `m.bias` is 0. This means that we believe that the RDV begins accummulating from 0 towards either boundary. We can formalize this belief as a probability distribution with all its mass around the state containing 0 and no mass anywhere else.
+
+![plot](plot_2_5.png)
+
+Now we can propogate this distribution over each time step because we know the distribution from which each change will be sampled! This is what the [Fokker-Planck Equation describes](https://en.wikipedia.org/wiki/Fokker%E2%80%93Planck_equation). To solve the equation using computers, however, we need to make numerical approximations (i.e. the discretization assumptions above).
+
+With the discretization and initial state assumptions we have made, we will use the RDV sampling distribution to compute the probability of moving from one state space bin to another. Formally, the probability of being in any bin $j$ at time $t+1$ is defined as 
+
+$$p^j_{t+1} = \sum_{i} p^i_t \times p^{i \rightarrow j}_t$$
+
+In words, this is the sum of the probabilities of being in any state $i$ at time $t$ times the transition probability of moving from bin $i$ to $j$. The initial state assumption means that the first term $p^i_0$ is 1 for the non-biased state bin in the middle of the boundaries and 0 everywhere else. 
+
+The transition probabilities are defined by the RDV sampling distribution. This is a probability density distribution, meaning the area under the curve sums to 1. The probability of observing a value between certain values can also be depicted via the area under the curve. Below are two examples. The probability of sampling a $\triangle RDV$ larger than .06 is around .03. The probability of sampling a $\triangle RDV$ larger than -.06 but smaller than -.04 is around .06. 
+
+![plot](plot_2_6.png)
+
+Going back to our example, to move from the initial state bin in the middle to one state bin higher we would need a $\triangle RDV$ that is larger than one but smaller than two state steps. With a state step of .2, this would mean a $\triangle RDV$ larger than .2 but smaller than .4. The probability of observing a $\triangle RDV$ of this size, however, is very very small with the sampling distribution defined by our model! The transition probabilities to move to any other state or over time steps gets even smaller!    
+
+![plot](plot_2_7.png)
+
+This 
 
 ## The problem in the previous tutorial
 

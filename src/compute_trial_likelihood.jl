@@ -205,7 +205,7 @@ particular DDM parameters.
 - The likelihood obtained for the given trial and model.
 """
 function DDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number = 10, 
-                                  stateStep::Number = 0.01)
+                                  stateStep::Number = 0.01, debug = false)
     
     # Get the number of time steps for this trial.
     numTimeSteps = Int64(trial.RT ÷ timeStep)
@@ -307,8 +307,12 @@ function DDM_get_trial_likelihood(;model::aDDM, trial::Trial, timeStep::Number =
         end
     end
   
-    
-    return likelihood
+    if debug
+      return (likelihood, prStates, probUpCrossing, probDownCrossing)
+    else
+      return likelihood
+    end
+
 end
 
 
